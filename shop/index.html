@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>加密商城 - CryptoMall</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0d1117; color:#e6edf3; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; min-height:100vh; }
+a { color:inherit; text-decoration:none; }
+
+/* 顶部导航 */
+.header { position:fixed; top:0; left:0; right:0; background:#161b22; border-bottom:1px solid #30363d; z-index:100; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; }
+.header h1 { font-size:18px; color:#58a6ff; }
+.header-icons { display:flex; gap:16px; }
+.header-icons span { font-size:20px; cursor:pointer; }
+
+/* 底部导航 */
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:#161b22; border-top:1px solid #30363d; display:flex; justify-content:space-around; padding:8px 0; z-index:100; }
+.nav-item { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11px; color:#8b949e; cursor:pointer; padding:4px 12px; }
+.nav-item.active { color:#58a6ff; }
+.nav-item .icon { font-size:22px; }
+
+/* 主内容区 */
+.main { padding:60px 0 70px; min-height:100vh; }
+
+/* 搜索栏 */
+.search-bar { padding:12px 16px; background:#0d1117; position:sticky; top:56px; z-index:50; }
+.search-bar input { width:100%; padding:10px 16px; border-radius:20px; border:1px solid #30363d; background:#161b22; color:#e6edf3; font-size:14px; outline:none; }
+.search-bar input:focus { border-color:#58a6ff; }
+.search-bar input::placeholder { color:#8b949e; }
+
+/* 分类滚动 */
+.categories { display:flex; gap:8px; padding:12px 16px; overflow-x:auto; background:#0d1117; }
+.categories::-webkit-scrollbar { display:none; }
+.cat-item { padding:6px 16px; background:#21262d; border-radius:16px; font-size:13px; white-space:nowrap; cursor:pointer; border:1px solid transparent; }
+.cat-item.active { background:#1f6feb; color:#fff; }
+.cat-item:hover { border-color:#58a6ff; }
+
+/* 商户入驻横幅 */
+.merchant-banner { margin:12px 16px; padding:16px; background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%); border-radius:12px; border:1px solid #30363d; }
+.merchant-banner h3 { color:#f0b429; font-size:15px; margin-bottom:8px; }
+.merchant-banner p { font-size:12px; color:#8b949e; margin-bottom:12px; }
+.merchant-banner button { padding:8px 20px; background:#f0b429; color:#000; border:none; border-radius:6px; font-size:13px; font-weight:bold; cursor:pointer; }
+
+/* 商品网格 */
+.products { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding:12px 16px; }
+.product-card { background:#161b22; border-radius:12px; overflow:hidden; border:1px solid #21262d; cursor:pointer; transition:transform .2s; }
+.product-card:active { transform:scale(.98); }
+.product-card img { width:100%; aspect-ratio:1; object-fit:cover; background:#21262d; }
+.product-card .info { padding:10px; }
+.product-card .shop { font-size:11px; color:#8b949e; margin-bottom:4px; }
+.product-card .name { font-size:13px; line-height:1.4; height:36px; overflow:hidden; margin-bottom:6px; }
+.product-card .price { display:flex; align-items:baseline; gap:4px; }
+.product-card .price .num { font-size:15px; color:#f0b429; font-weight:bold; }
+.product-card .price .unit { font-size:11px; color:#8b949e; }
+.product-card .crypto { font-size:11px; color:#3fb950; margin-top:4px; }
+
+/* 页面容器 */
+.page { display:none; padding:16px; }
+.page.active { display:block; }
+
+/* 购物车 */
+.cart-item { display:flex; gap:12px; padding:12px; background:#161b22; border-radius:12px; margin-bottom:12px; border:1px solid #21262d; }
+.cart-item img { width:80px; height:80px; border-radius:8px; object-fit:cover; background:#21262d; }
+.cart-item .info { flex:1; }
+.cart-item .name { font-size:14px; margin-bottom:4px; }
+.cart-item .shop { font-size:11px; color:#8b949e; margin-bottom:8px; }
+.cart-item .price { color:#f0b429; font-weight:bold; }
+.cart-item .qty { display:flex; align-items:center; gap:12px; margin-top:8px; }
+.cart-item .qty button { width:28px; height:28px; border-radius:6px; border:1px solid #30363d; background:#21262d; color:#e6edf3; font-size:16px; cursor:pointer; }
+.cart-item .qty span { min-width:30px; text-align:center; }
+
+/* 结算栏 */
+.checkout-bar { position:fixed; bottom:60px; left:0; right:0; background:#161b22; border-top:1px solid #30363d; padding:12px 16px; display:none; justify-content:space-between; align-items:center; }
+.checkout-bar.show { display:flex; }
+.checkout-bar .total { font-size:14px; }
+.checkout-bar .total .num { font-size:20px; color:#f0b429; font-weight:bold; }
+.checkout-bar .total .unit { font-size:12px; color:#8b949e; }
+.checkout-bar button { padding:12px 24px; background:#3fb950; color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer; }
+
+/* 商户中心 */
+.merchant-panel { background:#161b22; border-radius:12px; padding:16px; margin-bottom:16px; border:1px solid #21262d; }
+.merchant-panel h3 { font-size:16px; margin-bottom:12px; color:#58a6ff; }
+.merchant-panel .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+.merchant-panel .stat { text-align:center; padding:12px; background:#21262d; border-radius:8px; }
+.merchant-panel .stat .val { font-size:20px; font-weight:bold; color:#f0b429; }
+.merchant-panel .stat .lbl { font-size:11px; color:#8b949e; margin-top:4px; }
+
+/* 表单 */
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-size:13px; color:#8b949e; margin-bottom:6px; }
+.form-group input, .form-group textarea, .form-group select { width:100%; padding:12px; border-radius:8px; border:1px solid #30363d; background:#21262d; color:#e6edf3; font-size:14px; outline:none; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color:#58a6ff; }
+.form-group textarea { resize:vertical; min-height:100px; }
+
+.btn { padding:12px 24px; border-radius:8px; border:none; font-size:14px; font-weight:bold; cursor:pointer; }
+.btn-primary { background:#58a6ff; color:#fff; }
+.btn-success { background:#3fb950; color:#fff; }
+.btn-warning { background:#f0b429; color:#000; }
+
+/* 弹窗 */
+.modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.8); z-index:200; align-items:center; justify-content:center; padding:20px; }
+.modal.show { display:flex; }
+.modal-content { background:#161b22; border-radius:16px; width:100%; max-width:400px; max-height:80vh; overflow-y:auto; }
+.modal-header { padding:16px; border-bottom:1px solid #30363d; display:flex; justify-content:space-between; align-items:center; }
+.modal-header h3 { font-size:16px; }
+.modal-header .close { font-size:24px; cursor:pointer; color:#8b949e; }
+.modal-body { padding:16px; }
+
+/* 支付方式 */
+.payment-options { display:flex; flex-direction:column; gap:12px; }
+.payment-option { padding:16px; background:#21262d; border-radius:12px; border:2px solid transparent; cursor:pointer; display:flex; align-items:center; gap:12px; }
+.payment-option.selected { border-color:#58a6ff; }
+.payment-option .icon { font-size:28px; }
+.payment-option .info { flex:1; }
+.payment-option .name { font-size:14px; font-weight:bold; }
+.payment-option .addr { font-size:11px; color:#8b949e; word-break:break-all; }
+
+/* 订单状态 */
+.order-item { background:#161b22; border-radius:12px; padding:16px; margin-bottom:12px; border:1px solid #21262d; }
+.order-item .header { display:flex; justify-content:space-between; margin-bottom:12px; }
+.order-item .order-id { font-size:12px; color:#8b949e; }
+.order-item .status { font-size:12px; padding:4px 8px; border-radius:4px; }
+.order-item .status.pending { background:#d29922; color:#000; }
+.order-item .status.paid { background:#3fb950; color:#fff; }
+.order-item .status.shipped { background:#58a6ff; color:#fff; }
+.order-item .products { font-size:13px; margin-bottom:8px; }
+.order-item .total { font-size:14px; color:#f0b429; font-weight:bold; }
+
+/* 我的店铺 */
+.my-shop { background:#161b22; border-radius:12px; padding:16px; margin-bottom:16px; border:1px solid #21262d; }
+.my-shop .shop-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.my-shop .shop-logo { width:60px; height:60px; border-radius:12px; background:#21262d; display:flex; align-items:center; justify-content:center; font-size:24px; }
+.my-shop .shop-name { font-size:16px; font-weight:bold; }
+.my-shop .shop-desc { font-size:12px; color:#8b949e; }
+
+/* 底部提示 */
+.footer-note { text-align:center; padding:20px; font-size:11px; color:#484f58; }
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<div class="header">
+  <h1>🛒 加密商城</h1>
+  <div class="header-icons">
+    <span onclick="showPage('cart')">🛒<span id="cartBadge" style="font-size:10px;background:#f85149;padding:2px 5px;border-radius:10px;margin-left:-5px;display:none;">0</span></span>
+    <span onclick="showPage('profile')">👤</span>
+  </div>
+</div>
+
+<!-- 主内容 -->
+<div class="main" id="mainContent">
+  <!-- 首页 -->
+  <div class="page active" id="homePage">
+    <div class="search-bar">
+      <input type="text" placeholder="搜索商品、店铺..." oninput="searchProducts(this.value)">
+    </div>
+    
+    <div class="categories" id="categories">
+      <div class="cat-item active" onclick="filterCategory('all')">全部</div>
+      <div class="cat-item" onclick="filterCategory('digital')">数码</div>
+      <div class="cat-item" onclick="filterCategory('fashion')">服饰</div>
+      <div class="cat-item" onclick="filterCategory('food')">食品</div>
+      <div class="cat-item" onclick="filterCategory('home')">家居</div>
+      <div class="cat-item" onclick="filterCategory('service')">服务</div>
+    </div>
+    
+    <div class="merchant-banner">
+      <h3>🏪 商户入驻</h3>
+      <p>开店卖货，支持加密货币收款，全球用户一键购买</p>
+      <button onclick="showModal('merchantModal')">立即入驻</button>
+    </div>
+    
+    <div class="products" id="productList"></div>
+  </div>
+  
+  <!-- 分类页 -->
+  <div class="page" id="categoryPage">
+    <h2 style="margin-bottom:16px;font-size:18px;">商品分类</h2>
+    <div class="categories" style="flex-wrap:wrap;padding:0;">
+      <div class="cat-item" onclick="filterCategory('digital')">📱 数码电子</div>
+      <div class="cat-item" onclick="filterCategory('fashion')">👕 服装服饰</div>
+      <div class="cat-item" onclick="filterCategory('food')">🍜 美食特产</div>
+      <div class="cat-item" onclick="filterCategory('home')">🏠 家居生活</div>
+      <div class="cat-item" onclick="filterCategory('service')">⚙️ 虚拟服务</div>
+    </div>
+  </div>
+  
+  <!-- 购物车页 -->
+  <div class="page" id="cartPage">
+    <h2 style="margin-bottom:16px;font-size:18px;">购物车</h2>
+    <div id="cartList"></div>
+    <div id="cartEmpty" style="text-align:center;padding:40px;color:#8b949e;">
+      <div style="font-size:48px;margin-bottom:16px;">🛒</div>
+      <div>购物车是空的</div>
+    </div>
+  </div>
+  
+  <!-- 我的页 -->
+  <div class="page" id="profilePage">
+    <h2 style="margin-bottom:16px;font-size:18px;">我的</h2>
+    
+    <div class="merchant-panel">
+      <h3>📊 我的店铺</h3>
+      <div id="myShopInfo"></div>
+    </div>
+    
+    <div class="merchant-panel">
+      <h3>📦 我的订单</h3>
+      <div id="myOrders"></div>
+    </div>
+    
+    <div class="merchant-panel">
+      <h3>⚙️ 设置</h3>
+      <div class="form-group">
+        <label>收款钱包地址（USDT-TRC20）</label>
+        <input type="text" id="walletAddr" placeholder="输入您的TRC20钱包地址">
+      </div>
+      <button class="btn btn-primary" onclick="saveWallet()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 结算栏 -->
+<div class="checkout-bar" id="checkoutBar">
+  <div class="total">
+    合计: <span class="num" id="totalPrice">0.00</span> <span class="unit">USDT</span>
+  </div>
+  <button onclick="showModal('paymentModal')">去结算</button>
+</div>
+
+<!-- 底部导航 -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="showPage('home')">
+    <span class="icon">🏠</span>
+    <span>首页</span>
+  </div>
+  <div class="nav-item" onclick="showPage('category')">
+    <span class="icon">📂</span>
+    <span>分类</span>
+  </div>
+  <div class="nav-item" onclick="showPage('cart')">
+    <span class="icon">🛒</span>
+    <span>购物车</span>
+  </div>
+  <div class="nav-item" onclick="showPage('profile')">
+    <span class="icon">👤</span>
+    <span>我的</span>
+  </div>
+</div>
+
+<!-- 商户入驻弹窗 -->
+<div class="modal" id="merchantModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🏪 商户入驻</h3>
+      <span class="close" onclick="closeModal('merchantModal')">×</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>店铺名称</label>
+        <input type="text" id="shopName" placeholder="输入店铺名称">
+      </div>
+      <div class="form-group">
+        <label>店铺简介</label>
+        <textarea id="shopDesc" placeholder="介绍您的店铺"></textarea>
+      </div>
+      <div class="form-group">
+        <label>主营类目</label>
+        <select id="shopCategory">
+          <option value="digital">数码电子</option>
+          <option value="fashion">服装服饰</option>
+          <option value="food">美食特产</option>
+          <option value="home">家居生活</option>
+          <option value="service">虚拟服务</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>收款钱包（USDT-TRC20）</label>
+        <input type="text" id="shopWallet" placeholder="输入TRC20钱包地址">
+      </div>
+      <button class="btn btn-success" style="width:100%;" onclick="registerShop()">提交入驻</button>
+    </div>
+  </div>
+</div>
+
+<!-- 商品详情弹窗 -->
+<div class="modal" id="productModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="productTitle">商品详情</h3>
+      <span class="close" onclick="closeModal('productModal')">×</span>
+    </div>
+    <div class="modal-body" id="productDetail"></div>
+  </div>
+</div>
+
+<!-- 支付弹窗 -->
+<div class="modal" id="paymentModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>💰 选择支付方式</h3>
+      <span class="close" onclick="closeModal('paymentModal')">×</span>
+    </div>
+    <div class="modal-body">
+      <div class="payment-options">
+        <div class="payment-option selected" onclick="selectPayment(this, 'usdt')">
+          <span class="icon">💵</span>
+          <div class="info">
+            <div class="name">USDT (TRC20)</div>
+            <div class="addr">泰达币 · 低手续费</div>
+          </div>
+        </div>
+        <div class="payment-option" onclick="selectPayment(this, 'btc')">
+          <span class="icon">₿</span>
+          <div class="info">
+            <div class="name">Bitcoin (BTC)</div>
+            <div class="addr">比特币</div>
+          </div>
+        </div>
+        <div class="payment-option" onclick="selectPayment(this, 'eth')">
+          <span class="icon">Ξ</span>
+          <div class="info">
+            <div class="name">Ethereum (ETH)</div>
+            <div class="addr">以太坊</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:20px;text-align:center;">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">支付金额</div>
+        <div style="font-size:28px;font-weight:bold;color:#f0b429;"><span id="payAmount">0.00</span> USDT</div>
+      </div>
+      <button class="btn btn-success" style="width:100%;margin-top:20px;" onclick="confirmPayment()">确认支付</button>
+    </div>
+  </div>
+</div>
+
+<!-- 添加商品弹窗 -->
+<div class="modal" id="addProductModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>➕ 发布商品</h3>
+      <span class="close" onclick="closeModal('addProductModal')">×</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>商品名称</label>
+        <input type="text" id="productName" placeholder="输入商品名称">
+      </div>
+      <div class="form-group">
+        <label>商品描述</label>
+        <textarea id="productDesc" placeholder="描述您的商品"></textarea>
+      </div>
+      <div class="form-group">
+        <label>价格 (USDT)</label>
+        <input type="number" id="productPrice" placeholder="0.00" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>库存</label>
+        <input type="number" id="productStock" placeholder="100">
+      </div>
+      <div class="form-group">
+        <label>商品分类</label>
+        <select id="productCategory">
+          <option value="digital">数码电子</option>
+          <option value="fashion">服装服饰</option>
+          <option value="food">美食特产</option>
+          <option value="home">家居生活</option>
+          <option value="service">虚拟服务</option>
+        </select>
+      </div>
+      <button class="btn btn-success" style="width:100%;" onclick="addProduct()">发布商品</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer-note">
+  © 2025 CryptoMall 加密商城 · 支持加密货币支付
+</div>
+
+<script>
+// 示例数据
+let shops = JSON.parse(localStorage.getItem('cryptoShops') || '[]');
+let products = JSON.parse(localStorage.getItem('cryptoProducts') || '[]');
+let cart = JSON.parse(localStorage.getItem('cryptoCart') || '[]');
+let orders = JSON.parse(localStorage.getItem('cryptoOrders') || '[]');
+let myShop = JSON.parse(localStorage.getItem('myShop') || 'null');
+
+// 初始化示例数据
+if (products.length === 0) {
+  products = [
+    { id:1, shop:'数码旗舰店', shopId:1, name:'无线蓝牙耳机 降噪版', price:29.9, category:'digital', img:'🎧', stock:100, desc:'主动降噪，续航30小时' },
+    { id:2, shop:'潮流服饰', shopId:2, name:'纯棉T恤 简约款', price:9.9, category:'fashion', img:'👕', stock:500, desc:'100%纯棉，多色可选' },
+    { id:3, shop:'美食工坊', shopId:3, name:'手工牛肉干 500g', price:15.5, category:'food', img:'🥩', stock:50, desc:'内蒙古黄牛肉，自然风干' },
+    { id:4, shop:'智能生活', shopId:4, name:'智能手表 运动版', price:59.9, category:'digital', img:'⌚', stock:80, desc:'心率监测，GPS定位，IP68防水' },
+    { id:5, shop:'家居优选', shopId:5, name:'北欧风台灯', price:19.9, category:'home', img:'💡', stock:200, desc:'三档调光，护眼LED' },
+    { id:6, shop:'虚拟服务', shopId:6, name:'ChatGPT Plus 代充', price:5.0, category:'service', img:'🤖', stock:999, desc:'官方正版，即时到账' },
+    { id:7, shop:'数码旗舰店', shopId:1, name:'机械键盘 青轴', price:45.0, category:'digital', img:'⌨️', stock:60, desc:'RGB背光，金属面板' },
+    { id:8, shop:'潮流服饰', shopId:2, name:'运动鞋 透气款', price:35.0, category:'fashion', img:'👟', stock:120, desc:'飞织网面，轻便舒适' },
+  ];
+  localStorage.setItem('cryptoProducts', JSON.stringify(products));
+}
+
+// 渲染商品
+function renderProducts(list) {
+  const el = document.getElementById('productList');
+  el.innerHTML = list.map(p => `
+    <div class="product-card" onclick="showProduct(${p.id})">
+      <div style="width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:48px;background:#21262d;">${p.img}</div>
+      <div class="info">
+        <div class="shop">${p.shop}</div>
+        <div class="name">${p.name}</div>
+        <div class="price">
+          <span class="num">${p.price.toFixed(2)}</span>
+          <span class="unit">USDT</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// 渲染购物车
+function renderCart() {
+  const el = document.getElementById('cartList');
+  const empty = document.getElementById('cartEmpty');
+  const bar = document.getElementById('checkoutBar');
+  
+  if (cart.length === 0) {
+    el.innerHTML = '';
+    empty.style.display = 'block';
+    bar.classList.remove('show');
+    updateCartBadge();
+    return;
+  }
+  
+  empty.style.display = 'none';
+  bar.classList.add('show');
+  
+  let total = 0;
+  el.innerHTML = cart.map(item => {
+    const p = products.find(x => x.id === item.productId);
+    if (!p) return '';
+    total += p.price * item.qty;
+    return `
+      <div class="cart-item">
+        <div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;font-size:36px;background:#21262d;border-radius:8px;">${p.img}</div>
+        <div class="info">
+          <div class="name">${p.name}</div>
+          <div class="shop">${p.shop}</div>
+          <div class="price">${p.price.toFixed(2)} USDT</div>
+          <div class="qty">
+            <button onclick="changeQty(${p.id}, -1)">−</button>
+            <span>${item.qty}</span>
+            <button onclick="changeQty(${p.id}, 1)">+</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  document.getElementById('totalPrice').textContent = total.toFixed(2);
+  updateCartBadge();
+}
+
+// 更新购物车徽标
+function updateCartBadge() {
+  const badge = document.getElementById('cartBadge');
+  const count = cart.reduce((sum, x) => sum + x.qty, 0);
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'inline' : 'none';
+}
+
+// 添加到购物车
+function addToCart(productId) {
+  const item = cart.find(x => x.productId === productId);
+  if (item) {
+    item.qty++;
+  } else {
+    cart.push({ productId, qty: 1 });
+  }
+  localStorage.setItem('cryptoCart', JSON.stringify(cart));
+  updateCartBadge();
+  closeModal('productModal');
+  alert('已加入购物车');
+}
+
+// 修改数量
+function changeQty(productId, delta) {
+  const item = cart.find(x => x.productId === productId);
+  if (item) {
+    item.qty += delta;
+    if (item.qty <= 0) {
+      cart = cart.filter(x => x.productId !== productId);
+    }
+    localStorage.setItem('cryptoCart', JSON.stringify(cart));
+    renderCart();
+  }
+}
+
+// 显示商品详情
+function showProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('productTitle').textContent = p.name;
+  document.getElementById('productDetail').innerHTML = `
+    <div style="text-align:center;padding:20px;background:#21262d;border-radius:12px;margin-bottom:16px;">
+      <span style="font-size:80px;">${p.img}</span>
+    </div>
+    <div style="font-size:11px;color:#8b949e;margin-bottom:4px;">${p.shop}</div>
+    <div style="font-size:16px;font-weight:bold;margin-bottom:8px;">${p.name}</div>
+    <div style="font-size:12px;color:#8b949e;margin-bottom:16px;">${p.desc}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:24px;font-weight:bold;color:#f0b429;">${p.price.toFixed(2)} <span style="font-size:14px;color:#8b949e;">USDT</span></div>
+      <div style="font-size:12px;color:#8b949e;">库存 ${p.stock}</div>
+    </div>
+    <button class="btn btn-success" style="width:100%;" onclick="addToCart(${p.id})">加入购物车</button>
+  `;
+  showModal('productModal');
+}
+
+// 搜索商品
+function searchProducts(query) {
+  if (!query) {
+    renderProducts(products);
+    return;
+  }
+  const q = query.toLowerCase();
+  const filtered = products.filter(p => 
+    p.name.toLowerCase().includes(q) || 
+    p.shop.toLowerCase().includes(q)
+  );
+  renderProducts(filtered);
+}
+
+// 分类筛选
+function filterCategory(cat) {
+  document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  if (cat === 'all') {
+    renderProducts(products);
+  } else {
+    renderProducts(products.filter(p => p.category === cat));
+  }
+  showPage('home');
+}
+
+// 页面切换
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  
+  const pageId = page + 'Page';
+  document.getElementById(pageId).classList.add('active');
+  
+  const navMap = { home: 0, category: 1, cart: 2, profile: 3 };
+  document.querySelectorAll('.nav-item')[navMap[page] || 0].classList.add('active');
+  
+  if (page === 'cart') renderCart();
+  if (page === 'profile') renderProfile();
+}
+
+// 渲染个人中心
+function renderProfile() {
+  const shopInfo = document.getElementById('myShopInfo');
+  const ordersEl = document.getElementById('myOrders');
+  
+  if (myShop) {
+    shopInfo.innerHTML = `
+      <div class="my-shop">
+        <div class="shop-header">
+          <div class="shop-logo">🏪</div>
+          <div>
+            <div class="shop-name">${myShop.name}</div>
+            <div class="shop-desc">${myShop.desc}</div>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="val">${myShop.sales || 0}</div><div class="lbl">销量</div></div>
+          <div class="stat"><div class="val">${myShop.products || 0}</div><div class="lbl">商品</div></div>
+          <div class="stat"><div class="val">${(myShop.revenue || 0).toFixed(1)}</div><div class="lbl">收入</div></div>
+        </div>
+        <button class="btn btn-warning" style="width:100%;" onclick="showModal('addProductModal')">➕ 发布商品</button>
+      </div>
+    `;
+  } else {
+    shopInfo.innerHTML = `
+      <div style="text-align:center;padding:20px;color:#8b949e;">
+        <div style="font-size:36px;margin-bottom:12px;">🏪</div>
+        <div>暂未开店</div>
+        <button class="btn btn-primary" style="margin-top:12px;" onclick="showModal('merchantModal')">立即入驻</button>
+      </div>
+    `;
+  }
+  
+  if (orders.length > 0) {
+    ordersEl.innerHTML = orders.slice(-5).reverse().map(o => `
+      <div class="order-item">
+        <div class="header">
+          <span class="order-id">订单 #${o.id}</span>
+          <span class="status ${o.status}">${o.status === 'pending' ? '待支付' : o.status === 'paid' ? '已支付' : '已发货'}</span>
+        </div>
+        <div class="products">${o.items.map(i => i.name).join('、')}</div>
+        <div class="total">${o.total.toFixed(2)} USDT</div>
+      </div>
+    `).join('');
+  } else {
+    ordersEl.innerHTML = `<div style="text-align:center;color:#8b949e;padding:20px;">暂无订单</div>`;
+  }
+}
+
+// 注册店铺
+function registerShop() {
+  const name = document.getElementById('shopName').value.trim();
+  const desc = document.getElementById('shopDesc').value.trim();
+  const category = document.getElementById('shopCategory').value;
+  const wallet = document.getElementById('shopWallet').value.trim();
+  
+  if (!name || !wallet) {
+    alert('请填写店铺名称和收款钱包');
+    return;
+  }
+  
+  myShop = { id: Date.now(), name, desc, category, wallet, sales: 0, products: 0, revenue: 0 };
+  localStorage.setItem('myShop', JSON.stringify(myShop));
+  
+  closeModal('merchantModal');
+  renderProfile();
+  alert('入驻成功！');
+}
+
+// 添加商品
+function addProduct() {
+  if (!myShop) {
+    alert('请先开店');
+    return;
+  }
+  
+  const name = document.getElementById('productName').value.trim();
+  const desc = document.getElementById('productDesc').value.trim();
+  const price = parseFloat(document.getElementById('productPrice').value);
+  const stock = parseInt(document.getElementById('productStock').value);
+  const category = document.getElementById('productCategory').value;
+  
+  if (!name || !price) {
+    alert('请填写商品名称和价格');
+    return;
+  }
+  
+  const emojis = ['📦','🎁','💎','📱','💻','🎮','🎧','⌚','👕','👟','👜','💄','🍜','🍕','🍔','🎂','💡','🛋️','🧸','📚'];
+  const img = emojis[Math.floor(Math.random() * emojis.length)];
+  
+  const product = {
+    id: Date.now(),
+    shop: myShop.name,
+    shopId: myShop.id,
+    name, desc, price, stock, category, img
+  };
+  
+  products.push(product);
+  localStorage.setItem('cryptoProducts', JSON.stringify(products));
+  
+  myShop.products = (myShop.products || 0) + 1;
+  localStorage.setItem('myShop', JSON.stringify(myShop));
+  
+  closeModal('addProductModal');
+  renderProducts(products);
+  alert('商品发布成功！');
+}
+
+// 支付选择
+let selectedPayment = 'usdt';
+function selectPayment(el, type) {
+  document.querySelectorAll('.payment-option').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedPayment = type;
+}
+
+// 确认支付
+function confirmPayment() {
+  if (cart.length === 0) return;
+  
+  let total = 0;
+  const items = cart.map(item => {
+    const p = products.find(x => x.id === item.productId);
+    if (p) {
+      total += p.price * item.qty;
+      return { name: p.name, price: p.price, qty: item.qty };
+    }
+    return null;
+  }).filter(Boolean);
+  
+  const order = {
+    id: Date.now(),
+    items,
+    total,
+    payment: selectedPayment,
+    status: 'paid',
+    time: new Date().toISOString()
+  };
+  
+  orders.push(order);
+  localStorage.setItem('cryptoOrders', JSON.stringify(orders));
+  
+  // 清空购物车
+  cart = [];
+  localStorage.setItem('cryptoCart', JSON.stringify(cart));
+  
+  closeModal('paymentModal');
+  showPage('profile');
+  alert('支付成功！订单已生成');
+}
+
+// 弹窗控制
+function showModal(id) {
+  document.getElementById(id).classList.add('show');
+  if (id === 'paymentModal') {
+    const total = cart.reduce((sum, item) => {
+      const p = products.find(x => x.id === item.productId);
+      return sum + (p ? p.price * item.qty : 0);
+    }, 0);
+    document.getElementById('payAmount').textContent = total.toFixed(2);
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// 保存钱包
+function saveWallet() {
+  const addr = document.getElementById('walletAddr').value.trim();
+  if (addr) {
+    localStorage.setItem('userWallet', addr);
+    alert('保存成功');
+  }
+}
+
+// 加载用户钱包
+const savedWallet = localStorage.getItem('userWallet');
+if (savedWallet) {
+  document.getElementById('walletAddr').value = savedWallet;
+}
+
+// 初始化
+renderProducts(products);
+updateCartBadge();
+</script>
+
+</body>
+</html>
