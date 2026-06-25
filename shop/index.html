@@ -92,7 +92,6 @@ a { color:inherit; text-decoration:none; }
 .status.paid { background:#58a6ff; color:#fff; }
 .status.shipped { background:#a371f7; color:#fff; }
 .status.completed { background:#3fb950; color:#fff; }
-.status.refunding { background:#f85149; color:#fff; }
 .order-card .items { font-size:13px; margin-bottom:8px; color:#8b949e; }
 .order-card .total { font-size:16px; color:#f0b429; font-weight:bold; }
 .order-card .actions { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
@@ -153,11 +152,17 @@ a { color:inherit; text-decoration:none; }
 .logistics-info h4 { font-size:13px; margin-bottom:8px; color:#58a6ff; }
 .logistics-info p { font-size:12px; color:#8b949e; line-height:1.6; }
 
-/* 切换角色 */
-.role-switch { position:fixed; top:56px; right:16px; z-index:50; }
-.role-btn { padding:6px 12px; border-radius:16px; font-size:11px; cursor:pointer; border:1px solid #30363d; background:#161b22; color:#8b949e; }
-.role-btn.admin { background:#f0b429; color:#000; border-color:#f0b429; }
-.role-btn.merchant { background:#3fb950; color:#fff; border-color:#3fb950; }
+/* 登录页面 */
+.login-page { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; }
+.login-box { background:#161b22; border-radius:16px; padding:24px; width:100%; max-width:360px; border:1px solid #30363d; }
+.login-box h2 { text-align:center; margin-bottom:24px; font-size:20px; }
+.login-box .logo { text-align:center; font-size:48px; margin-bottom:16px; }
+.login-tabs { display:flex; margin-bottom:20px; background:#21262d; border-radius:8px; padding:3px; }
+.login-tab { flex:1; padding:10px; text-align:center; border-radius:6px; font-size:14px; cursor:pointer; color:#8b949e; }
+.login-tab.active { background:#1f6feb; color:#fff; }
+.user-info { display:flex; align-items:center; gap:8px; padding:8px 12px; background:#21262d; border-radius:8px; font-size:13px; }
+.user-info .email { color:#58a6ff; }
+.user-info .badge { font-size:10px; padding:2px 6px; border-radius:4px; background:#f0b429; color:#000; }
 
 /* 底部提示 */
 .footer-note { text-align:center; padding:20px; font-size:11px; color:#484f58; }
@@ -165,18 +170,66 @@ a { color:inherit; text-decoration:none; }
 </head>
 <body>
 
+<!-- 登录页面 -->
+<div id="authPage" class="login-page">
+  <div class="login-box">
+    <div class="logo">🛒</div>
+    <h2>加密商城</h2>
+    
+    <div class="login-tabs">
+      <div class="login-tab active" onclick="switchAuthTab('login')">登录</div>
+      <div class="login-tab" onclick="switchAuthTab('register')">注册</div>
+    </div>
+    
+    <!-- 登录表单 -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" id="loginEmail" placeholder="请输入邮箱">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="loginPassword" placeholder="请输入密码">
+      </div>
+      <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">登录</button>
+    </div>
+    
+    <!-- 注册表单 -->
+    <div id="registerForm" style="display:none;">
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" id="regEmail" placeholder="请输入邮箱">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="regPassword" placeholder="请设置密码（至少6位）">
+      </div>
+      <div class="form-group">
+        <label>确认密码</label>
+        <input type="password" id="regPassword2" placeholder="再次输入密码">
+      </div>
+      <button class="btn btn-success" style="width:100%;" onclick="doRegister()">注册</button>
+    </div>
+    
+    <div style="margin-top:20px;font-size:12px;color:#8b949e;text-align:center;">
+      管理员邮箱：182521921@qq.com
+    </div>
+  </div>
+</div>
+
+<!-- 主应用 -->
+<div id="mainApp" style="display:none;">
+
 <!-- 顶部导航 -->
 <div class="header">
   <h1>🛒 加密商城</h1>
   <div class="header-icons">
-    <span onclick="showPage('cart')">🛒<span id="cartBadge" style="font-size:10px;background:#f85149;padding:2px 5px;border-radius:10px;margin-left:-5px;display:none;">0</span></span>
-    <span onclick="showPage('profile')">👤</span>
+    <div class="user-info">
+      <span class="email" id="userEmail"></span>
+      <span class="badge" id="userBadge" style="display:none;">管理员</span>
+    </div>
+    <span onclick="doLogout()" title="退出">🚪</span>
   </div>
-</div>
-
-<!-- 角色切换 -->
-<div class="role-switch">
-  <button class="role-btn" id="roleBtn" onclick="switchRole()">切换：顾客</button>
 </div>
 
 <!-- 主内容 -->
@@ -224,7 +277,7 @@ a { color:inherit; text-decoration:none; }
   <div class="page" id="merchantPage">
     <h2 style="margin-bottom:16px;font-size:18px;">🏪 商户中心</h2>
     
-    <div class="panel">
+    <div class="panel" id="myShopPanel" style="display:none;">
       <h3>📊 今日数据</h3>
       <div class="stats">
         <div class="stat"><div class="val" id="mTodayOrders">0</div><div class="lbl">订单</div></div>
@@ -239,7 +292,7 @@ a { color:inherit; text-decoration:none; }
       <div id="merchantOrders"></div>
     </div>
     
-    <div class="panel">
+    <div class="panel" id="withdrawPanel" style="display:none;">
       <h3>💰 提现</h3>
       <div class="form-group">
         <label>提现金额 (USDT)</label>
@@ -252,7 +305,7 @@ a { color:inherit; text-decoration:none; }
       <button class="btn btn-success" onclick="requestWithdraw()">申请提现</button>
     </div>
     
-    <div class="panel">
+    <div class="panel" id="addProductPanel" style="display:none;">
       <h3>➕ 发布商品</h3>
       <div class="form-group">
         <label>商品名称</label>
@@ -333,12 +386,14 @@ a { color:inherit; text-decoration:none; }
     <h2 style="margin-bottom:16px;font-size:18px;">我的</h2>
     
     <div class="panel">
-      <h3>👤 当前身份</h3>
-      <div id="currentRole" style="font-size:14px;padding:12px;background:#21262d;border-radius:8px;">顾客</div>
-      <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="switchRole()">切换身份</button>
+      <h3>👤 账户信息</h3>
+      <div style="font-size:14px;padding:12px;background:#21262d;border-radius:8px;">
+        <div>邮箱：<span id="profileEmail"></span></div>
+        <div style="margin-top:8px;">身份：<span id="profileRole"></span></div>
+      </div>
     </div>
     
-    <div class="panel" id="myShopPanel" style="display:none;">
+    <div class="panel" id="myShopInfoPanel" style="display:none;">
       <h3>🏪 我的店铺</h3>
       <div id="myShopInfo"></div>
     </div>
@@ -346,6 +401,10 @@ a { color:inherit; text-decoration:none; }
     <div class="panel">
       <h3>📦 我的订单</h3>
       <button class="btn btn-small btn-primary" onclick="showPage('orders')">查看全部订单</button>
+    </div>
+    
+    <div class="panel">
+      <button class="btn btn-danger" style="width:100%;" onclick="doLogout()">退出登录</button>
     </div>
   </div>
 </div>
@@ -359,23 +418,8 @@ a { color:inherit; text-decoration:none; }
 </div>
 
 <!-- 底部导航 -->
-<div class="bottom-nav" id="bottomNav">
-  <div class="nav-item active" onclick="showPage('home')">
-    <span class="icon">🏠</span>
-    <span>首页</span>
-  </div>
-  <div class="nav-item" onclick="showPage('cart')">
-    <span class="icon">🛒</span>
-    <span>购物车</span>
-  </div>
-  <div class="nav-item" onclick="showPage('orders')">
-    <span class="icon">📦</span>
-    <span>订单</span>
-  </div>
-  <div class="nav-item" onclick="showPage('profile')">
-    <span class="icon">👤</span>
-    <span>我的</span>
-  </div>
+<div class="bottom-nav" id="bottomNav"></div>
+
 </div>
 
 <!-- 商户入驻弹窗 -->
@@ -475,8 +519,12 @@ a { color:inherit; text-decoration:none; }
 </div>
 
 <script>
+// ========== 常量 ==========
+const ADMIN_EMAIL = '182521921@qq.com';
+
 // ========== 数据存储 ==========
-let currentRole = localStorage.getItem('currentRole') || 'customer'; // customer, merchant, admin
+let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+let users = JSON.parse(localStorage.getItem('cryptoUsers') || '[]');
 let myShop = JSON.parse(localStorage.getItem('myShop') || 'null');
 let cart = JSON.parse(localStorage.getItem('cryptoCart') || '[]');
 let orders = JSON.parse(localStorage.getItem('cryptoOrders') || '[]');
@@ -504,43 +552,87 @@ if (products.length === 0) {
   localStorage.setItem('cryptoMerchants', JSON.stringify(merchants));
 }
 
-// ========== 角色切换 ==========
-function switchRole() {
-  const roles = ['customer', 'merchant', 'admin'];
-  const names = { customer: '顾客', merchant: '商户', admin: '管理员' };
-  const idx = roles.indexOf(currentRole);
-  currentRole = roles[(idx + 1) % roles.length];
-  localStorage.setItem('currentRole', currentRole);
+// ========== 认证系统 ==========
+function switchAuthTab(tab) {
+  document.querySelectorAll('.login-tab').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+}
+
+function doRegister() {
+  const email = document.getElementById('regEmail').value.trim().toLowerCase();
+  const password = document.getElementById('regPassword').value;
+  const password2 = document.getElementById('regPassword2').value;
   
-  document.getElementById('roleBtn').textContent = '切换：' + names[currentRole];
-  document.getElementById('roleBtn').className = 'role-btn ' + (currentRole === 'admin' ? 'admin' : currentRole === 'merchant' ? 'merchant' : '');
-  document.getElementById('currentRole').textContent = names[currentRole];
+  if (!email || !password) { alert('请填写完整信息'); return; }
+  if (password.length < 6) { alert('密码至少6位'); return; }
+  if (password !== password2) { alert('两次密码不一致'); return; }
+  if (users.find(u => u.email === email)) { alert('该邮箱已注册'); return; }
   
-  // 显示/隐藏商户入驻横幅
-  document.getElementById('merchantBanner').style.display = currentRole === 'customer' ? 'block' : 'none';
+  const isAdmin = email === ADMIN_EMAIL;
+  users.push({ email, password, isAdmin, createdAt: new Date().toISOString() });
+  localStorage.setItem('cryptoUsers', JSON.stringify(users));
   
-  // 显示/隐藏店铺面板
-  document.getElementById('myShopPanel').style.display = (currentRole === 'merchant' && myShop) ? 'block' : 'none';
+  alert('注册成功！请登录');
+  switchAuthTab('login');
+  document.getElementById('loginEmail').value = email;
+}
+
+function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const password = document.getElementById('loginPassword').value;
   
-  // 更新底部导航
+  const user = users.find(u => u.email === email && u.password === password);
+  if (!user) { alert('邮箱或密码错误'); return; }
+  
+  // 检查是否是管理员
+  if (email === ADMIN_EMAIL && !user.isAdmin) {
+    user.isAdmin = true;
+    localStorage.setItem('cryptoUsers', JSON.stringify(users));
+  }
+  
+  currentUser = user;
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  
+  showMainApp();
+}
+
+function doLogout() {
+  currentUser = null;
+  localStorage.removeItem('currentUser');
+  document.getElementById('authPage').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+}
+
+function showMainApp() {
+  document.getElementById('authPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  
+  document.getElementById('userEmail').textContent = currentUser.email;
+  document.getElementById('userBadge').style.display = currentUser.isAdmin ? 'inline' : 'none';
+  document.getElementById('profileEmail').textContent = currentUser.email;
+  document.getElementById('profileRole').textContent = currentUser.isAdmin ? '管理员' : (myShop ? '商户' : '顾客');
+  
   updateBottomNav();
-  
-  // 刷新页面内容
   showPage('home');
 }
 
+// ========== 底部导航 ==========
 function updateBottomNav() {
   const nav = document.getElementById('bottomNav');
-  if (currentRole === 'admin') {
+  if (currentUser.isAdmin) {
     nav.innerHTML = `
-      <div class="nav-item active" onclick="showPage('admin')"><span class="icon">🔐</span><span>管理后台</span></div>
+      <div class="nav-item active" onclick="showPage('admin')"><span class="icon">🔐</span><span>管理</span></div>
       <div class="nav-item" onclick="showPage('home')"><span class="icon">🏠</span><span>商城</span></div>
+      <div class="nav-item" onclick="showPage('profile')"><span class="icon">👤</span><span>我的</span></div>
     `;
-  } else if (currentRole === 'merchant') {
+  } else if (myShop) {
     nav.innerHTML = `
       <div class="nav-item active" onclick="showPage('merchant')"><span class="icon">🏪</span><span>商户中心</span></div>
       <div class="nav-item" onclick="showPage('home')"><span class="icon">🏠</span><span>商城</span></div>
       <div class="nav-item" onclick="showPage('orders')"><span class="icon">📦</span><span>订单</span></div>
+      <div class="nav-item" onclick="showPage('profile')"><span class="icon">👤</span><span>我的</span></div>
     `;
   } else {
     nav.innerHTML = `
@@ -561,15 +653,14 @@ function showPage(page) {
   const pageEl = document.getElementById(pageId);
   if (pageEl) pageEl.classList.add('active');
   
-  // 更新导航高亮
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(item => {
-    if (item.textContent.includes(page === 'admin' ? '管理' : page === 'merchant' ? '商户' : page === 'home' ? '首页' : page === 'cart' ? '购物车' : page === 'orders' ? '订单' : '我的')) {
+    const text = item.textContent;
+    if (text.includes(page === 'admin' ? '管理' : page === 'merchant' ? '商户' : page === 'home' ? '首页' : page === 'cart' ? '购物车' : page === 'orders' ? '订单' : '我的')) {
       item.classList.add('active');
     }
   });
   
-  // 渲染页面内容
   if (page === 'cart') renderCart();
   if (page === 'orders') renderOrders();
   if (page === 'merchant') renderMerchant();
@@ -679,16 +770,14 @@ function changeQty(pid, delta) {
 }
 
 function updateCartBadge() {
-  const badge = document.getElementById('cartBadge');
   const count = cart.reduce((s, x) => s + x.qty, 0);
-  badge.textContent = count;
-  badge.style.display = count > 0 ? 'inline' : 'none';
+  // 简化，不在header显示徽章
 }
 
 // ========== 订单 ==========
 function renderOrders() {
   const el = document.getElementById('ordersList');
-  const userOrders = orders.filter(o => o.buyerRole === currentRole || currentRole === 'customer');
+  const userOrders = orders.filter(o => o.buyerEmail === currentUser.email);
   
   if (userOrders.length === 0) {
     el.innerHTML = '<div style="text-align:center;color:#8b949e;padding:40px;">暂无订单</div>';
@@ -703,7 +792,7 @@ function renderOrders() {
       </div>
       <div class="items">${o.items.map(i => i.name + ' x' + i.qty).join('、')}</div>
       <div class="total">${o.total.toFixed(2)} USDT</div>
-      ${o.status === 'shipped' ? `
+      ${o.status === 'shipped' && o.logistics ? `
         <div class="logistics-info">
           <h4>📦 物流信息</h4>
           <p>快递：${o.logistics.company}<br>单号：${o.logistics.tracking}</p>
@@ -717,7 +806,7 @@ function renderOrders() {
 }
 
 function getStatusText(s) {
-  const map = { pending: '待支付', paid: '待发货', shipped: '已发货', completed: '已完成', refunding: '退款中' };
+  const map = { pending: '待支付', paid: '待发货', shipped: '已发货', completed: '已完成' };
   return map[s] || s;
 }
 
@@ -755,7 +844,7 @@ function confirmPayment() {
     items, total,
     txHash,
     status: 'paid',
-    buyerRole: currentRole,
+    buyerEmail: currentUser.email,
     time: new Date().toISOString()
   };
   
@@ -793,18 +882,22 @@ function confirmReceive(orderId) {
 // ========== 商户中心 ==========
 function renderMerchant() {
   if (!myShop) {
-    document.getElementById('merchantPage').innerHTML = `
-      <h2 style="margin-bottom:16px;font-size:18px;">🏪 商户中心</h2>
-      <div class="panel">
-        <div style="text-align:center;padding:40px;">
-          <div style="font-size:48px;margin-bottom:16px;">🏪</div>
-          <div style="color:#8b949e;margin-bottom:16px;">您还未开店</div>
-          <button class="btn btn-success" onclick="showModal('merchantModal')">立即入驻</button>
-        </div>
+    document.getElementById('myShopPanel').style.display = 'none';
+    document.getElementById('withdrawPanel').style.display = 'none';
+    document.getElementById('addProductPanel').style.display = 'none';
+    document.getElementById('merchantOrders').innerHTML = `
+      <div style="text-align:center;padding:40px;">
+        <div style="font-size:48px;margin-bottom:16px;">🏪</div>
+        <div style="color:#8b949e;margin-bottom:16px;">您还未开店</div>
+        <button class="btn btn-success" onclick="showModal('merchantModal')">立即入驻</button>
       </div>
     `;
     return;
   }
+  
+  document.getElementById('myShopPanel').style.display = 'block';
+  document.getElementById('withdrawPanel').style.display = 'block';
+  document.getElementById('addProductPanel').style.display = 'block';
   
   // 统计数据
   const shopOrders = orders.filter(o => o.items.some(i => i.shopId === myShop.id));
@@ -828,7 +921,7 @@ function renderMerchant() {
       <div class="items">${o.items.map(i => i.name).join('、')}</div>
       <div class="total">${o.total.toFixed(2)} USDT</div>
       ${o.status === 'paid' ? `<div class="actions"><button class="btn btn-small btn-warning" onclick="showShipModal(${o.id})">发货</button></div>` : ''}
-      ${o.status === 'shipped' ? `<div class="logistics-info"><p>快递：${o.logistics.company} ${o.logistics.tracking}</p></div>` : ''}
+      ${o.status === 'shipped' && o.logistics ? `<div class="logistics-info"><p>快递：${o.logistics.company} ${o.logistics.tracking}</p></div>` : ''}
     </div>
   `).join('') || '<div style="color:#8b949e;text-align:center;padding:20px;">暂无订单</div>';
 }
@@ -904,7 +997,6 @@ function switchAdminTab(tab) {
 }
 
 function renderAdmin() {
-  // 统计数据
   const totalSales = orders.filter(o => o.status !== 'pending').reduce((s, o) => s + o.total, 0);
   const platformBalance = orders.filter(o => o.status === 'paid' || o.status === 'shipped').reduce((s, o) => s + o.total, 0);
   
@@ -913,7 +1005,6 @@ function renderAdmin() {
   document.getElementById('aTotalMerchants').textContent = merchants.length;
   document.getElementById('aPlatformBalance').textContent = platformBalance.toFixed(1);
   
-  // 加载平台钱包
   if (platformWallet) document.getElementById('platformWallet').value = platformWallet;
 }
 
@@ -927,6 +1018,7 @@ function renderAdminOrders() {
       </div>
       <div class="items">${o.items.map(i => i.name).join('、')}</div>
       <div class="total">${o.total.toFixed(2)} USDT</div>
+      <div style="font-size:11px;color:#8b949e;margin-top:8px;">买家：${o.buyerEmail}</div>
     </div>
   `).join('') || '<div style="color:#8b949e;text-align:center;padding:20px;">暂无订单</div>';
 }
@@ -977,7 +1069,7 @@ function approveWithdraw(id) {
     w.status = 'approved';
     localStorage.setItem('cryptoWithdraws', JSON.stringify(withdraws));
   }
-  alert('请手动转账到商户钱包，转账完成后点击确定');
+  alert('请手动转账到商户钱包');
   renderAdminWithdraws();
 }
 
@@ -985,7 +1077,6 @@ function rejectWithdraw(id) {
   const w = withdraws.find(x => x.id === id);
   if (w) {
     w.status = 'rejected';
-    // 退回余额
     const m = merchants.find(x => x.id === w.shopId);
     if (m) m.balance += w.amount;
     localStorage.setItem('cryptoWithdraws', JSON.stringify(withdraws));
@@ -1003,16 +1094,15 @@ function registerShop() {
   if (!name || !wallet) { alert('请填写店铺名称和收款钱包'); return; }
   
   const id = Date.now();
-  myShop = { id, name, desc, wallet };
+  myShop = { id, name, desc, wallet, ownerEmail: currentUser.email };
   merchants.push({ id, name, wallet, balance: 0, sales: 0 });
   
   localStorage.setItem('myShop', JSON.stringify(myShop));
   localStorage.setItem('cryptoMerchants', JSON.stringify(merchants));
   
   closeModal('merchantModal');
-  switchRole();
-  currentRole = 'merchant';
-  localStorage.setItem('currentRole', 'merchant');
+  document.getElementById('profileRole').textContent = '商户';
+  updateBottomNav();
   showPage('merchant');
   alert('入驻成功！');
 }
@@ -1047,26 +1137,25 @@ function addProduct() {
 
 function renderProfile() {
   if (myShop) {
-    document.getElementById('myShopPanel').style.display = 'block';
+    document.getElementById('myShopInfoPanel').style.display = 'block';
     document.getElementById('myShopInfo').innerHTML = `
       <div style="font-size:16px;font-weight:bold;margin-bottom:8px;">${myShop.name}</div>
       <div style="font-size:12px;color:#8b949e;">${myShop.desc || '暂无简介'}</div>
     `;
+  } else {
+    document.getElementById('myShopInfoPanel').style.display = 'none';
   }
 }
 
 // ========== 初始化 ==========
-document.getElementById('roleBtn').textContent = '切换：' + (currentRole === 'customer' ? '顾客' : currentRole === 'merchant' ? '商户' : '管理员');
-document.getElementById('roleBtn').className = 'role-btn ' + (currentRole === 'admin' ? 'admin' : currentRole === 'merchant' ? 'merchant' : '');
-document.getElementById('currentRole').textContent = currentRole === 'customer' ? '顾客' : currentRole === 'merchant' ? '商户' : '管理员';
-
-if (currentRole !== 'customer') {
-  document.getElementById('merchantBanner').style.display = 'none';
+if (currentUser) {
+  showMainApp();
+} else {
+  document.getElementById('authPage').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
 }
 
-updateBottomNav();
 renderProducts(products);
-updateCartBadge();
 </script>
 
 </body>
