@@ -76,6 +76,27 @@ canvas { border-radius:8px; background:#0d1117; border:1px solid #21262d; }
 .footer { margin-top:auto; padding:12px; font-size:11px; color:#484f58; }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.6; } }
 .price-live { animation:pulse .8s ease-in-out infinite; }
+/* AI行情分析 */
+.analysis-container { display:none; width:100%; }
+.analysis-symbols { display:flex; gap:8px; justify-content:center; margin-bottom:6px; }
+.analysis-symbols button { padding:8px 18px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:bold; border:1px solid #30363d; background:#161b22; color:#8b949e; transition:.2s; }
+.analysis-symbols button:hover { border-color:#58a6ff; color:#c9d1d9; }
+.analysis-symbols button.active { background:#1f6feb; color:#fff; border-color:#1f6feb; }
+.analysis-loading { text-align:center; color:#8b949e; padding:30px; font-size:14px; }
+.analysis-summary { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:8px; }
+.analysis-card { background:#161b22; border:1px solid #21262d; border-radius:8px; padding:10px 14px; min-width:130px; text-align:center; }
+.analysis-card h3 { font-size:11px; color:#8b949e; margin-bottom:4px; }
+.analysis-card .price { font-size:20px; font-weight:bold; }
+.analysis-card .price.up { color:#3fb950; }
+.analysis-card .price.down { color:#f85149; }
+.fib-list { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:8px; }
+.fib-item { background:#0d1117; border:1px solid #21262d; border-radius:6px; padding:4px 10px; font-size:11px; text-align:center; min-width:55px; }
+.fib-item .fib-pct { color:#58a6ff; font-weight:bold; font-size:12px; }
+.fib-item .fib-price { color:#8b949e; }
+.ha-legend { display:flex; gap:14px; justify-content:center; font-size:11px; color:#8b949e; margin-top:4px; }
+.ha-legend .dot { display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+.ha-legend .dot.green { background:#3fb950; }
+.ha-legend .dot.red { background:#f85149; }
 </style>
 </head>
 <body>
@@ -86,6 +107,7 @@ canvas { border-radius:8px; background:#0d1117; border:1px solid #21262d; }
     <button class="mode-tab active" onclick="switchMode('pattern')">形态识别</button>
     <button class="mode-tab" onclick="switchMode('direction')">方向预测</button>
     <button class="mode-tab" onclick="switchMode('trading')">💹 交易训练</button>
+    <button class="mode-tab" onclick="switchMode('analysis')">🤖 AI分析</button>
   </div>
 </div>
 
@@ -138,6 +160,24 @@ canvas { border-radius:8px; background:#0d1117; border:1px solid #21262d; }
     <div class="eval" id="eval"></div>
     <div class="eval" id="evalDetail"></div>
     <button class="restart" onclick="restartTrading()">再来一局</button>
+  </div>
+  
+  <!-- AI行情分析 -->
+  <div class="analysis-container" id="analysisContainer">
+    <div class="analysis-symbols">
+      <button onclick="selectAnalysisSymbol('BTC')" id="symBTC">₿ BTC</button>
+      <button onclick="selectAnalysisSymbol('ETH')" id="symETH">Ξ ETH</button>
+      <button onclick="selectAnalysisSymbol('XAU')" id="symXAU">🥇 XAU</button>
+    </div>
+    <div class="analysis-loading" id="analysisStatus">👆 选择品种，获取最新4小时行情分析</div>
+    <canvas id="analysisChart" width="700" height="400" style="display:none"></canvas>
+    <div class="ha-legend" id="haLegend" style="display:none">
+      <span><span class="dot green"></span>平均K阳线</span>
+      <span><span class="dot red"></span>平均K阴线</span>
+      <span>平均K = (开+高+低+收)/4</span>
+    </div>
+    <div class="analysis-summary" id="analysisSummary" style="display:none"></div>
+    <div class="fib-list" id="fibList" style="display:none"></div>
   </div>
   
   <button class="skip-btn" id="skipBtn" onclick="nextRound()" style="display:none">跳过 →</button>
@@ -622,14 +662,13 @@ function switchMode(m) {
   tradeState = null;
   document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.mode-tab').forEach(t => {
-    if ((m==='pattern'&&t.textContent.includes('形态'))||(m==='direction'&&t.textContent.includes('方向'))||(m==='trading'&&t.textContent.includes('交易'))) t.classList.add('active');
+    if ((m==='pattern'&&t.textContent.includes('形态'))||(m==='direction'&&t.textContent.includes('方向'))||(m==='trading'&&t.textContent.includes('交易'))||(m==='analysis'&&t.textContent.includes('分析'))) t.classList.add('active');
   });
   
-  // UI切换
-  const isTrade = m === 'trading';
-  document.getElementById('scoreboard').style.display = isTrade?'none':'flex';
+  const isTrade = m === 'trading', isAnalysis = m === 'analysis';
+  document.getElementById('scoreboard').style.display = (isTrade||isAnalysis)?'none':'flex';
   document.getElementById('assetBar').style.display = isTrade?'flex':'none';
-  document.getElementById('choices').style.display = isTrade?'none':'flex';
+  document.getElementById('choices').style.display = (isTrade||isAnalysis)?'none':'flex';
   document.getElementById('dirBtns').style.display = 'none';
   document.getElementById('tradePanel').style.display = isTrade?'flex':'none';
   document.getElementById('sessionEnd').classList.remove('show');
@@ -638,8 +677,19 @@ function switchMode(m) {
   document.getElementById('result').textContent = '';
   document.getElementById('patName').textContent = '';
   document.getElementById('patDesc').textContent = '';
+  document.getElementById('canvas').style.display = isAnalysis?'none':'block';
+  document.getElementById('analysisContainer').style.display = isAnalysis?'block':'none';
   
-  if (isTrade) initTrading();
+  if (isAnalysis) {
+    analysisState.symbol = null;
+    document.getElementById('analysisChart').style.display = 'none';
+    document.getElementById('analysisSummary').style.display = 'none';
+    document.getElementById('fibList').style.display = 'none';
+    document.getElementById('haLegend').style.display = 'none';
+    document.getElementById('analysisStatus').style.display = 'block';
+    document.getElementById('analysisStatus').textContent = '👆 选择品种，获取最新4小时行情分析';
+    document.querySelectorAll('.analysis-symbols button').forEach(b => b.classList.remove('active'));
+  } else if (isTrade) initTrading();
   else nextRound();
 }
 
@@ -684,6 +734,226 @@ document.addEventListener('keydown', e => {
     if (e.key==='ArrowDown'||e.key==='s') predict('down');
   }
 });
+
+// ============ AI行情分析 ============
+const analysisState = { symbol: null, bars: [], haBars: [], swingHighs: [], swingLows: [], fibLevels: null, loading: false };
+
+async function selectAnalysisSymbol(sym) {
+  if (analysisState.loading) return;
+  analysisState.symbol = sym;
+  document.querySelectorAll('.analysis-symbols button').forEach(b => b.classList.remove('active'));
+  document.getElementById('sym'+sym).classList.add('active');
+  const statusEl = document.getElementById('analysisStatus');
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = `<span style="animation:pulse .8s infinite">⏳</span> 正在获取 ${sym} 4小时K线数据...`;
+  document.getElementById('analysisChart').style.display = 'none';
+  document.getElementById('analysisSummary').style.display = 'none';
+  document.getElementById('fibList').style.display = 'none';
+  document.getElementById('haLegend').style.display = 'none';
+  analysisState.loading = true;
+  try {
+    const bars = await fetchKlines(sym);
+    if (!bars || bars.length < 20) throw new Error('数据不足，至少需20根K线');
+    analysisState.bars = bars;
+    const swing = findSwingPoints(bars, 5);
+    analysisState.swingHighs = swing.highs;
+    analysisState.swingLows = swing.lows;
+    const allH = bars.map(b=>b.h), allL = bars.map(b=>b.l);
+    analysisState.fibLevels = calcFibonacci(Math.max(...allH), Math.min(...allL));
+    analysisState.haBars = calcHeikinAshi(bars);
+    renderAnalysis();
+    updateAnalysisSummary(bars);
+    statusEl.style.display = 'none';
+    document.getElementById('analysisChart').style.display = 'block';
+    document.getElementById('analysisSummary').style.display = 'flex';
+    document.getElementById('fibList').style.display = 'flex';
+    document.getElementById('haLegend').style.display = 'flex';
+  } catch(e) {
+    statusEl.textContent = '❌ 获取失败: ' + e.message + '。请换个品种重试。';
+    statusEl.style.display = 'block';
+  }
+  analysisState.loading = false;
+}
+
+async function fetchKlines(sym) {
+  if (sym === 'BTC' || sym === 'ETH') {
+    const s = sym === 'BTC' ? 'BTCUSDT' : 'ETHUSDT';
+    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${s}&interval=4h&limit=100`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    return data.map(k => ({ time:k[0], o:+k[1], h:+k[2], l:+k[3], c:+k[4] }));
+  } else {
+    // XAU: 使用 Twelve Data demo, 如果不行尝试备用
+    let res = await fetch('https://api.twelvedata.com/time_series?symbol=XAU/USD&interval=4h&apikey=demo&outputsize=100');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    let data = await res.json();
+    if (data.status === 'error') {
+      // 备用: 尝试另一个免费源
+      res = await fetch('https://api.forexrateapi.com/v1/timeseries?api_key=demo&start_date=2026-06-01&end_date=2026-06-25&base=USD&symbols=XAU&interval=4h');
+      if (!res.ok) throw new Error(data.message || 'XAU数据源不可用');
+      data = await res.json();
+    }
+    if (!data.values || data.values.length === 0) throw new Error('XAU无数据返回');
+    return data.values.reverse().map(v => ({ o:+v.open, h:+v.high, l:+v.low, c:+v.close, time:new Date(v.datetime).getTime() }));
+  }
+}
+
+function findSwingPoints(bars, win=5) {
+  const highs = [], lows = [];
+  for (let i = win; i < bars.length - win; i++) {
+    const b = bars[i];
+    let isH = true, isL = true;
+    for (let j = i - win; j <= i + win; j++) {
+      if (j === i) continue;
+      if (bars[j].h >= b.h) isH = false;
+      if (bars[j].l <= b.l) isL = false;
+    }
+    if (isH) highs.push({ idx:i, price:b.h });
+    if (isL) lows.push({ idx:i, price:b.l });
+  }
+  return { highs, lows };
+}
+
+function calcFibonacci(high, low) {
+  const d = high - low;
+  return {
+    high, low, diff:d,
+    levels: [
+      { pct:0, value:low }, { pct:23.6, value:low+d*0.236 },
+      { pct:38.2, value:low+d*0.382 }, { pct:50, value:low+d*0.5 },
+      { pct:61.8, value:low+d*0.618 }, { pct:78.6, value:low+d*0.786 },
+      { pct:100, value:high },
+      { pct:-27.2, value:low-d*0.272 }, { pct:127.2, value:high+d*0.272 }, { pct:161.8, value:high+d*0.618 }
+    ]
+  };
+}
+
+function calcHeikinAshi(bars) {
+  const ha = [];
+  for (let i = 0; i < bars.length; i++) {
+    const hc = (bars[i].o+bars[i].h+bars[i].l+bars[i].c)/4;
+    const ho = i===0 ? (bars[i].o+bars[i].c)/2 : (ha[i-1].o+ha[i-1].c)/2;
+    ha.push({ o:ho, h:Math.max(bars[i].h,ho,hc), l:Math.min(bars[i].l,ho,hc), c:hc });
+  }
+  return ha;
+}
+
+function renderAnalysis() {
+  const canvas = document.getElementById('analysisChart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const bars = analysisState.bars, haBars = analysisState.haBars;
+  const fib = analysisState.fibLevels;
+  const end = bars.length - 1, start = Math.max(0, end - 96);
+  const vis = bars.slice(start, end + 1), haVis = haBars.slice(start, end + 1);
+  const topY = 10, topH = 230, botY = 255, botH = 130;
+  
+  let minP = Infinity, maxP = -Infinity;
+  vis.forEach(b => { if(b.l<minP)minP=b.l; if(b.h>maxP)maxP=b.h; });
+  minP = Math.min(minP, fib.low - fib.diff*0.3);
+  maxP = Math.max(maxP, fib.high + fib.diff*0.3);
+  const pr = maxP - minP;
+  function y(p) { return topY + (maxP-p)/pr*topH; }
+  
+  ctx.clearRect(0, 0, W, H);
+  // 上部背景
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, topY+topH);
+  // 网格
+  ctx.strokeStyle = '#161b22'; ctx.lineWidth = .5;
+  for (let i=0; i<=6; i++) { ctx.beginPath(); ctx.moveTo(55,topY+topH*i/6); ctx.lineTo(W-10,topY+topH*i/6); ctx.stroke(); }
+  // 斐波那契
+  fib.levels.forEach(lv => {
+    const ly = y(lv.value);
+    const isKey = lv.pct===0||lv.pct===50||lv.pct===100||lv.pct===61.8;
+    ctx.strokeStyle = isKey?'rgba(88,166,255,.45)':'rgba(88,166,255,.18)';
+    ctx.lineWidth = isKey?1.3:.7;
+    ctx.setLineDash(lv.pct===50?[5,4]:[2,6]);
+    ctx.beginPath(); ctx.moveTo(0,ly); ctx.lineTo(W,ly); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#58a6ff'; ctx.font = '9px monospace';
+    ctx.fillText(lv.pct+'%', 3, ly-2);
+    ctx.fillText(lv.value.toFixed(lv.value>999?0:1), W-60, ly-2);
+  });
+  // K线
+  const gap = (W-60)/vis.length, barW = Math.max(2, Math.min(7, gap*.65));
+  vis.forEach((b,i) => {
+    const x = 55+gap*i+gap/2, up = b.c>=b.o;
+    ctx.strokeStyle = up?'#3fb950':'#f85149'; ctx.fillStyle = up?'#3fb950':'#f85149';
+    ctx.beginPath(); ctx.moveTo(x,y(b.h)); ctx.lineTo(x,y(b.l)); ctx.stroke();
+    const bh = Math.max(Math.abs(y(b.c)-y(b.o)),1);
+    ctx.fillRect(x-barW/2, y(Math.max(b.o,b.c)), barW, bh);
+  });
+  // 转折点
+  analysisState.swingHighs.forEach(sp => {
+    if (sp.idx<start||sp.idx>end) return;
+    const x = 55+gap*(sp.idx-start)+gap/2;
+    ctx.fillStyle = '#f85149'; ctx.font = 'bold 13px monospace';
+    ctx.fillText('▼', x-7, y(sp.price)-4);
+  });
+  analysisState.swingLows.forEach(sp => {
+    if (sp.idx<start||sp.idx>end) return;
+    const x = 55+gap*(sp.idx-start)+gap/2;
+    ctx.fillStyle = '#3fb950'; ctx.font = 'bold 13px monospace';
+    ctx.fillText('▲', x-7, y(sp.price)+13);
+  });
+  // 当前价
+  const last = bars[end], ly2 = y(last.c);
+  ctx.fillStyle = '#58a6ff'; ctx.beginPath(); ctx.arc(W-15,ly2,4,0,Math.PI*2); ctx.fill();
+  ctx.font = '10px monospace'; ctx.fillText(last.c.toFixed(last.c>999?0:1), W-55, ly2-6);
+  // 标题
+  ctx.fillStyle = '#8b949e'; ctx.font = '11px Microsoft YaHei';
+  ctx.fillText('K线 + 斐波那契 + 转折点', 55, topY-2);
+  
+  // === 下部: 平均K线 ===
+  const haMin = Math.min(...haVis.map(b=>b.l)), haMax = Math.max(...haVis.map(b=>b.h));
+  const haR = (haMax-haMin)||1;
+  function hy(p) { return botY + (haMax-p)/haR*botH; }
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0, botY, W, botH);
+  ctx.strokeStyle = '#161b22'; ctx.lineWidth = .5;
+  for (let i=0; i<=4; i++) { ctx.beginPath(); ctx.moveTo(55,botY+botH*i/4); ctx.lineTo(W-10,botY+botH*i/4); ctx.stroke(); }
+  haVis.forEach((b,i) => {
+    const x = 55+gap*i+gap/2, up = b.c>=b.o;
+    ctx.strokeStyle = up?'#3fb950':'#f85149';
+    ctx.fillStyle = up?'rgba(63,185,80,.65)':'rgba(248,81,73,.65)';
+    ctx.beginPath(); ctx.moveTo(x,hy(b.h)); ctx.lineTo(x,hy(b.l)); ctx.stroke();
+    const bh2 = Math.max(Math.abs(hy(b.c)-hy(b.o)),1);
+    ctx.fillRect(x-barW/2, hy(Math.max(b.o,b.c)), barW, bh2);
+    if (Math.abs(b.c-b.o)<.6) ctx.strokeRect(x-barW/2, hy(Math.max(b.o,b.c)), barW, bh2);
+  });
+  ctx.fillStyle = '#8b949e'; ctx.font = '11px Microsoft YaHei';
+  ctx.fillText('平均K线 (Heikin-Ashi)', 55, botY-2);
+}
+
+function updateAnalysisSummary(bars) {
+  const last = bars[bars.length-1], prev = bars[bars.length-2];
+  const chg = last.c-prev.c, chgPct = (chg/prev.c*100).toFixed(2);
+  const up = chg>=0;
+  const ha = analysisState.haBars;
+  const haUp = ha.slice(-5).filter(b=>b.c>=b.o).length;
+  const haTrend = haUp>=4?'强势上涨':haUp>=3?'偏多':haUp<=1?'强势下跌':'偏空';
+  const fib = analysisState.fibLevels;
+  const fLevels = fib.levels.filter(l=>l.pct>=0);
+  let fibZone = '-';
+  for (let i=0; i<fLevels.length-1; i++) {
+    const a=fLevels[i].value, b=fLevels[i+1].value;
+    if (last.c>=Math.min(a,b) && last.c<=Math.max(a,b)) {
+      fibZone = fLevels[i].pct+'%-'+fLevels[i+1].pct+'%'; break;
+    }
+  }
+  const fmt = v => v>999 ? v.toFixed(0) : v.toFixed(1);
+  document.getElementById('analysisSummary').innerHTML = `
+    <div class="analysis-card"><h3>最新价</h3><div class="price ${up?'up':'down'}">${fmt(last.c)}</div><div style="font-size:11px;color:#8b949e">${up?'+':''}${fmt(chg)} (${up?'+':''}${chgPct}%)</div></div>
+    <div class="analysis-card"><h3>区间高/低</h3><div class="price" style="color:#f85149">▲ ${fmt(fib.high)}</div><div class="price" style="color:#3fb950">▼ ${fmt(fib.low)}</div></div>
+    <div class="analysis-card"><h3>平均K线趋势</h3><div class="price" style="color:${haUp>=3?'#3fb950':'#f85149'}">${haTrend}</div><div style="font-size:11px;color:#8b949e">近5根: ${haUp}/5 阳</div></div>
+    <div class="analysis-card"><h3>斐波那契区域</h3><div class="price" style="color:#58a6ff">${fibZone}</div><div style="font-size:11px;color:#8b949e">区间: ${fmt(fib.diff)}</div></div>
+  `;
+  document.getElementById('fibList').innerHTML = fib.levels.map(l => `
+    <div class="fib-item" style="border-color:${l.pct===0||l.pct===100?'#58a6ff':'#21262d'}">
+      <div class="fib-pct" style="color:${l.pct===0?'#3fb950':l.pct===100?'#f85149':'#58a6ff'}">${l.pct}%</div>
+      <div class="fib-price">${fmt(l.value)}</div>
+    </div>
+  `).join('');
+}
 
 // 启动
 updateStats();
