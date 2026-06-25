@@ -236,7 +236,7 @@ const PATTERNS = [
 
 // ============ 绘图工具 ============
 function drawCandle(x, yO, yH, yL, yC, w=16, alpha=1) {
-  const barW = Math.max(w, 6), isUp = yC >= yO;
+  const barW = Math.max(w, 6), isUp = yC <= yO;  // Canvas Y轴向下，所以 yC<yO 表示收盘更高
   const color = isUp ? '#3fb950' : '#f85149';
   ctx.globalAlpha = alpha;
   ctx.strokeStyle = color; ctx.fillStyle = color;
