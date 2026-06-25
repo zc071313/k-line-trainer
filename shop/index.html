@@ -360,7 +360,30 @@ a { color:inherit; text-decoration:none; }
           <label>USDT-TRC20 收款地址</label>
           <input type="text" id="platformWallet" placeholder="输入平台TRC20收款地址">
         </div>
-        <button class="btn btn-warning" onclick="savePlatformWallet()">保存</button>
+        <button class="btn btn-warning" onclick="savePlatformWallet()">保存USDT地址</button>
+      </div>
+      
+      <div class="panel">
+        <h3>💰 人民币收款设置</h3>
+        <div class="form-group">
+          <label>支付宝账号</label>
+          <input type="text" id="platformAlipay" placeholder="支付宝账号">
+        </div>
+        <div class="form-group">
+          <label>支付宝收款码</label>
+          <input type="file" id="platformAlipayQr" accept="image/*" onchange="previewPlatformAlipayQr(this)">
+          <img id="platformAlipayQrPreview" style="margin-top:8px;max-width:150px;max-height:150px;border-radius:8px;display:none;">
+        </div>
+        <div class="form-group">
+          <label>微信号</label>
+          <input type="text" id="platformWechat" placeholder="微信号">
+        </div>
+        <div class="form-group">
+          <label>微信收款码</label>
+          <input type="file" id="platformWechatQr" accept="image/*" onchange="previewPlatformWechatQr(this)">
+          <img id="platformWechatQrPreview" style="margin-top:8px;max-width:150px;max-height:150px;border-radius:8px;display:none;">
+        </div>
+        <button class="btn btn-warning" onclick="savePlatformCNY()">保存人民币收款</button>
       </div>
     </div>
     
@@ -567,6 +590,23 @@ a { color:inherit; text-decoration:none; }
   </div>
 </div>
 
+<!-- 人民币支付弹窗 -->
+<div class="modal" id="cnyPaymentModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>💳 支付</h3>
+      <span class="close" onclick="closeModal('cnyPaymentModal')">×</span>
+    </div>
+    <div class="modal-body">
+      <div id="cnyProductInfo"></div>
+      <div id="cnyPaymentMethods"></div>
+      <div style="font-size:12px;color:#d29922;margin-top:16px;padding:12px;background:#3a2a1a;border-radius:8px;">
+        ⚠️ 请使用支付宝或微信扫码支付，支付完成后联系商家发货
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="footer-note">
   © 2025 CryptoMall · 平台托管 · 安全交易
 </div>
@@ -585,6 +625,7 @@ let merchants = JSON.parse(localStorage.getItem('cryptoMerchants') || '[]');
 let products = JSON.parse(localStorage.getItem('cryptoProducts') || '[]');
 let withdraws = JSON.parse(localStorage.getItem('cryptoWithdraws') || '[]');
 let platformWallet = localStorage.getItem('platformWallet') || '';
+let platformData = JSON.parse(localStorage.getItem('platformData') || '{}');
 
 // 初始化示例商品
 if (products.length === 0) {
@@ -741,6 +782,9 @@ function renderProducts(list) {
 function showProduct(id) {
   const p = products.find(x => x.id === id);
   if (!p) return;
+  const currency = p.currency || 'USDT';
+  const isCNY = currency === 'CNY';
+  
   document.getElementById('productTitle').textContent = p.name;
   document.getElementById('productDetail').innerHTML = `
     <div style="text-align:center;padding:20px;background:#21262d;border-radius:12px;margin-bottom:16px;overflow:hidden;">
@@ -748,10 +792,115 @@ function showProduct(id) {
     </div>
     <div style="font-size:11px;color:#8b949e;">${p.shop}</div>
     <div style="font-size:16px;font-weight:bold;margin:8px 0;">${p.name}</div>
-    <div style="font-size:24px;font-weight:bold;color:#f0b429;">${p.price.toFixed(2)} <span style="font-size:14px;color:#8b949e;">${p.currency || 'USDT'}</span></div>
-    <button class="btn btn-success" style="width:100%;margin-top:16px;" onclick="addToCart(${p.id})">加入购物车</button>
+    <div style="font-size:24px;font-weight:bold;color:#f0b429;">${p.price.toFixed(2)} <span style="font-size:14px;color:#8b949e;">${currency}</span></div>
+    
+    <div style="margin-top:16px;padding:12px;background:#21262d;border-radius:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:14px;color:#8b949e;">购买数量</span>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button onclick="changeModalQty(-1)" style="width:32px;height:32px;border-radius:50%;border:none;background:#30363d;color:#e6edf3;font-size:18px;cursor:pointer;">−</button>
+          <span id="modalQty" style="font-size:18px;font-weight:bold;min-width:30px;text-align:center;">1</span>
+          <button onclick="changeModalQty(1)" style="width:32px;height:32px;border-radius:50%;border:none;background:#30363d;color:#e6edf3;font-size:18px;cursor:pointer;">+</button>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #30363d;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:14px;color:#8b949e;">小计</span>
+        <span id="modalTotal" style="font-size:20px;font-weight:bold;color:#f0b429;">${p.price.toFixed(2)} ${currency}</span>
+      </div>
+    </div>
+    
+    <button class="btn btn-success" style="width:100%;margin-top:16px;" onclick="directBuy(${p.id})">${isCNY ? '立即支付' : '加入购物车'}</button>
   `;
   showModal('productModal');
+}
+
+let modalQty = 1;
+function changeModalQty(delta) {
+  modalQty = Math.max(1, modalQty + delta);
+  document.getElementById('modalQty').textContent = modalQty;
+  const p = products.find(x => x.id === currentProductId);
+  if (p) {
+    const total = (p.price * modalQty).toFixed(2);
+    document.getElementById('modalTotal').textContent = total + ' ' + (p.currency || 'USDT');
+  }
+}
+
+let currentProductId = null;
+function directBuy(productId) {
+  currentProductId = productId;
+  const p = products.find(x => x.id === productId);
+  if (!p) return;
+  
+  const currency = p.currency || 'USDT';
+  if (currency === 'CNY') {
+    showCNYPaymentModal(p, modalQty);
+  } else {
+    addToCart(productId);
+    closeModal('productModal');
+    alert('已加入购物车');
+  }
+}
+
+function showCNYPaymentModal(product, qty) {
+  const total = (product.price * qty).toFixed(2);
+  closeModal('productModal');
+  
+  document.getElementById('cnyProductInfo').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      ${product.img.startsWith('data:') ? `<img src="${product.img}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;">` : `<span style="font-size:40px;">${product.img}</span>`}
+      <div>
+        <div style="font-weight:bold;">${product.name}</div>
+        <div style="font-size:12px;color:#8b949e;">${qty}件 × ${product.price.toFixed(2)} CNY</div>
+      </div>
+    </div>
+    <div style="font-size:20px;font-weight:bold;color:#f0b429;text-align:right;">合计：${total} CNY</div>
+  `;
+  
+  const paymentMethods = document.getElementById('cnyPaymentMethods');
+  const merchant = merchants.find(m => m.id === product.shopId);
+  
+  if (merchant) {
+    paymentMethods.innerHTML = `
+      <div style="margin-bottom:16px;">
+        <div style="font-size:14px;color:#8b949e;margin-bottom:8px;">支付宝支付</div>
+        ${merchant.alipayQr ? `<img src="${merchant.alipayQr}" style="width:150px;height:150px;border-radius:8px;">` : `<div style="font-size:12px;color:#8b949e;">支付宝账号：${merchant.alipay || '未设置'}</div>`}
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:14px;color:#8b949e;margin-bottom:8px;">微信支付</div>
+        ${merchant.wechatQr ? `<img src="${merchant.wechatQr}" style="width:150px;height:150px;border-radius:8px;">` : `<div style="font-size:12px;color:#8b949e;">微信号：${merchant.wechat || '未设置'}</div>`}
+      </div>
+    `;
+  } else {
+    paymentMethods.innerHTML = `
+      <div style="margin-bottom:16px;">
+        <div style="font-size:14px;color:#8b949e;margin-bottom:8px;">支付宝支付</div>
+        <img id="platformAlipayQrImg" style="width:150px;height:150px;border-radius:8px;display:none;">
+        <div id="platformAlipayAccount" style="font-size:12px;color:#8b949e;">未设置</div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:14px;color:#8b949e;margin-bottom:8px;">微信支付</div>
+        <img id="platformWechatQrImg" style="width:150px;height:150px;border-radius:8px;display:none;">
+        <div id="platformWechatAccount" style="font-size:12px;color:#8b949e;">未设置</div>
+      </div>
+    `;
+    
+    // 加载平台收款信息
+    const platformData = JSON.parse(localStorage.getItem('platformData') || '{}');
+    if (platformData.alipayQr) {
+      document.getElementById('platformAlipayQrImg').src = platformData.alipayQr;
+      document.getElementById('platformAlipayQrImg').style.display = 'block';
+    } else if (platformData.alipay) {
+      document.getElementById('platformAlipayAccount').textContent = '支付宝账号：' + platformData.alipay;
+    }
+    if (platformData.wechatQr) {
+      document.getElementById('platformWechatQrImg').src = platformData.wechatQr;
+      document.getElementById('platformWechatQrImg').style.display = 'block';
+    } else if (platformData.wechat) {
+      document.getElementById('platformWechatAccount').textContent = '微信号：' + platformData.wechat;
+    }
+  }
+  
+  showModal('cnyPaymentModal');
 }
 
 function searchProducts(q) {
@@ -1238,7 +1387,54 @@ function renderAdminWithdraws() {
 function savePlatformWallet() {
   platformWallet = document.getElementById('platformWallet').value.trim();
   localStorage.setItem('platformWallet', platformWallet);
-  alert('保存成功');
+  alert('USDT地址保存成功');
+}
+
+function previewPlatformAlipayQr(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      platformData.alipayQr = e.target.result;
+      document.getElementById('platformAlipayQrPreview').src = platformData.alipayQr;
+      document.getElementById('platformAlipayQrPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function previewPlatformWechatQr(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      platformData.wechatQr = e.target.result;
+      document.getElementById('platformWechatQrPreview').src = platformData.wechatQr;
+      document.getElementById('platformWechatQrPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function savePlatformCNY() {
+  platformData.alipay = document.getElementById('platformAlipay').value.trim();
+  platformData.wechat = document.getElementById('platformWechat').value.trim();
+  localStorage.setItem('platformData', JSON.stringify(platformData));
+  alert('人民币收款信息保存成功');
+}
+
+function renderAdmin() {
+  // 加载平台数据
+  document.getElementById('platformWallet').value = platformWallet;
+  document.getElementById('platformAlipay').value = platformData.alipay || '';
+  document.getElementById('platformWechat').value = platformData.wechat || '';
+  
+  if (platformData.alipayQr) {
+    document.getElementById('platformAlipayQrPreview').src = platformData.alipayQr;
+    document.getElementById('platformAlipayQrPreview').style.display = 'block';
+  }
+  if (platformData.wechatQr) {
+    document.getElementById('platformWechatQrPreview').src = platformData.wechatQr;
+    document.getElementById('platformWechatQrPreview').style.display = 'block';
+  }
 }
 
 function approveWithdraw(id) {
