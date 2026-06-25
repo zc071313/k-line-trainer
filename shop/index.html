@@ -601,7 +601,20 @@ a { color:inherit; text-decoration:none; }
       <div id="cnyProductInfo"></div>
       <div id="cnyPaymentMethods"></div>
       <div style="font-size:12px;color:#d29922;margin-top:16px;padding:12px;background:#3a2a1a;border-radius:8px;">
-        ⚠️ 请使用支付宝或微信扫码支付，支付完成后联系商家发货
+        ⚠️ 请使用支付宝或微信扫码支付
+      </div>
+      
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid #30363d;">
+        <h4 style="font-size:14px;margin-bottom:12px;">支付确认</h4>
+        <div class="form-group">
+          <label>上传支付截图（可选）</label>
+          <input type="file" id="cnyPayProof" accept="image/*" onchange="previewCnyProof(this)">
+          <img id="cnyProofPreview" style="margin-top:8px;max-width:100%;max-height:150px;border-radius:8px;display:none;">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="btn btn-success" style="flex:1;" onclick="confirmCNYPayment()">我已支付</button>
+          <button class="btn" style="flex:1;background:#30363d;" onclick="closeModal('cnyPaymentModal')">取消</button>
+        </div>
       </div>
     </div>
   </div>
@@ -845,6 +858,10 @@ function showCNYPaymentModal(product, qty) {
   const total = (product.price * qty).toFixed(2);
   closeModal('productModal');
   
+  // 重置支付证明
+  document.getElementById('cnyProofPreview').style.display = 'none';
+  document.getElementById('cnyPayProof').value = '';
+  
   document.getElementById('cnyProductInfo').innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
       ${product.img.startsWith('data:') ? `<img src="${product.img}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;">` : `<span style="font-size:40px;">${product.img}</span>`}
@@ -884,7 +901,6 @@ function showCNYPaymentModal(product, qty) {
       </div>
     `;
     
-    // 加载平台收款信息
     const platformData = JSON.parse(localStorage.getItem('platformData') || '{}');
     if (platformData.alipayQr) {
       document.getElementById('platformAlipayQrImg').src = platformData.alipayQr;
@@ -901,6 +917,60 @@ function showCNYPaymentModal(product, qty) {
   }
   
   showModal('cnyPaymentModal');
+}
+
+let cnyProofData = null;
+
+function previewCnyProof(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      cnyProofData = e.target.result;
+      document.getElementById('cnyProofPreview').src = cnyProofData;
+      document.getElementById('cnyProofPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function confirmCNYPayment() {
+  if (!currentProductId || !modalQty) return;
+  
+  const p = products.find(x => x.id === currentProductId);
+  if (!p) return;
+  
+  const total = (p.price * modalQty).toFixed(2);
+  
+  // 创建订单
+  const order = {
+    id: Date.now(),
+    productId: p.id,
+    productName: p.name,
+    productImg: p.img,
+    shop: p.shop,
+    shopId: p.shopId,
+    price: p.price,
+    qty: modalQty,
+    total: parseFloat(total),
+    currency: 'CNY',
+    status: '待确认',
+    buyerEmail: currentUser.email,
+    proof: cnyProofData,
+    createdAt: new Date().toISOString()
+  };
+  
+  orders.push(order);
+  localStorage.setItem('cryptoOrders', JSON.stringify(orders));
+  
+  closeModal('cnyPaymentModal');
+  
+  // 重置
+  modalQty = 1;
+  cnyProofData = null;
+  currentProductId = null;
+  
+  alert('订单已提交！商家确认后发货');
+  showPage('orders');
 }
 
 function searchProducts(q) {
@@ -994,8 +1064,19 @@ function renderOrders() {
         <span class="order-id">订单 #${o.id}</span>
         <span class="status ${o.status}">${getStatusText(o.status)}</span>
       </div>
-      <div class="items">${o.items.map(i => i.name + ' x' + i.qty).join('、')}</div>
-      <div class="total">${o.total.toFixed(2)} USDT</div>
+      ${o.productName ? `
+        <div style="display:flex;align-items:center;gap:12px;margin:12px 0;">
+          ${o.productImg && o.productImg.startsWith('data:') ? `<img src="${o.productImg}" style="width:50px;height:50px;border-radius:8px;object-fit:cover;">` : `<span style="font-size:30px;">${o.productImg || '📦'}</span>`}
+          <div>
+            <div style="font-weight:bold;">${o.productName}</div>
+            <div style="font-size:12px;color:#8b949e;">${o.qty}件 × ${o.price.toFixed(2)} ${o.currency || 'USDT'}</div>
+          </div>
+        </div>
+        ${o.proof ? `<div style="margin:12px 0;"><div style="font-size:12px;color:#8b949e;margin-bottom:4px;">支付证明：</div><img src="${o.proof}" style="max-width:100%;max-height:150px;border-radius:8px;"></div>` : ''}
+      ` : `
+        <div class="items">${o.items && o.items.map ? o.items.map(i => i.name + ' x' + i.qty).join('、') : ''}</div>
+      `}
+      <div class="total">${o.total ? o.total.toFixed(2) : '0.00'} ${o.currency || 'USDT'}</div>
       ${o.status === 'shipped' && o.logistics ? `
         <div class="logistics-info">
           <h4>📦 物流信息</h4>
