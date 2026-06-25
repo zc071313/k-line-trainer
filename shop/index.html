@@ -439,6 +439,7 @@ a { color:inherit; text-decoration:none; }
       <div class="form-group">
         <label>收款钱包 (USDT-TRC20)</label>
         <input type="text" id="shopWallet" placeholder="输入TRC20地址">
+        <div style="font-size:11px;color:#d29922;margin-top:4px;">⚠️ 绑定后不可更改，如需修改请联系平台</div>
       </div>
       <button class="btn btn-success" style="width:100%;" onclick="registerShop()">提交入驻</button>
     </div>
@@ -897,6 +898,22 @@ function renderMerchant() {
   document.getElementById('withdrawPanel').style.display = 'block';
   document.getElementById('addProductPanel').style.display = 'block';
   
+  // 显示收款地址（不可修改）
+  const shopInfoHtml = `
+    <div style="font-size:12px;color:#8b949e;margin-bottom:4px;">收款地址（不可修改）</div>
+    <div style="font-size:11px;background:#21262d;padding:8px;border-radius:6px;word-break:break-all;margin-bottom:12px;">${myShop.wallet}</div>
+    <div style="font-size:11px;color:#d29922;">如需修改收款地址，请联系平台客服</div>
+  `;
+  const existingInfo = document.getElementById('myShopPanel').querySelector('.shop-wallet-info');
+  if (existingInfo) {
+    existingInfo.innerHTML = shopInfoHtml;
+  } else {
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'shop-wallet-info';
+    infoDiv.innerHTML = shopInfoHtml;
+    document.getElementById('myShopPanel').appendChild(infoDiv);
+  }
+  
   // 统计数据
   const shopOrders = orders.filter(o => o.items.some(i => i.shopId === myShop.id));
   const todayOrders = shopOrders.filter(o => new Date(o.time).toDateString() === new Date().toDateString());
@@ -1024,17 +1041,30 @@ function renderAdminOrders() {
 function renderAdminMerchants() {
   const el = document.getElementById('adminMerchantsList');
   el.innerHTML = merchants.map(m => `
-    <div class="merchant-card">
-      <div class="info">
-        <h4>${m.name}</h4>
-        <p>${m.wallet.substring(0, 20)}...</p>
+    <div class="merchant-card" style="flex-direction:column;align-items:flex-start;">
+      <div style="display:flex;justify-content:space-between;width:100%;margin-bottom:8px;">
+        <h4 style="margin:0;">${m.name}</h4>
+        <div class="balance" style="text-align:right;">
+          <div class="val">${m.balance.toFixed(1)}</div>
+          <div class="lbl">可提现</div>
+        </div>
       </div>
-      <div class="balance">
-        <div class="val">${m.balance.toFixed(1)}</div>
-        <div class="lbl">可提现</div>
-      </div>
+      <div style="font-size:11px;color:#8b949e;width:100%;">收款地址：${m.wallet}</div>
+      <button class="btn btn-small btn-warning" style="margin-top:8px;" onclick="showEditWalletModal(${m.id})">修改收款地址</button>
     </div>
   `).join('');
+}
+
+function showEditWalletModal(merchantId) {
+  const m = merchants.find(x => x.id === merchantId);
+  if (!m) return;
+  const newWallet = prompt('修改 ' + m.name + ' 的收款地址：\n当前：' + m.wallet, m.wallet);
+  if (newWallet && newWallet.trim()) {
+    m.wallet = newWallet.trim();
+    localStorage.setItem('cryptoMerchants', JSON.stringify(merchants));
+    alert('修改成功');
+    renderAdminMerchants();
+  }
 }
 
 function renderAdminWithdraws() {
