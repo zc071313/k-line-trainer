@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>加密商城 - CryptoMall</title>
+<title>加密商城 - 平台托管版</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#0d1117; color:#e6edf3; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; min-height:100vh; }
@@ -24,18 +24,20 @@ a { color:inherit; text-decoration:none; }
 /* 主内容区 */
 .main { padding:60px 0 70px; min-height:100vh; }
 
+/* 页面容器 */
+.page { display:none; padding:16px; }
+.page.active { display:block; }
+
 /* 搜索栏 */
-.search-bar { padding:12px 16px; background:#0d1117; position:sticky; top:56px; z-index:50; }
+.search-bar { padding:12px 16px; background:#0d1117; }
 .search-bar input { width:100%; padding:10px 16px; border-radius:20px; border:1px solid #30363d; background:#161b22; color:#e6edf3; font-size:14px; outline:none; }
 .search-bar input:focus { border-color:#58a6ff; }
-.search-bar input::placeholder { color:#8b949e; }
 
 /* 分类滚动 */
 .categories { display:flex; gap:8px; padding:12px 16px; overflow-x:auto; background:#0d1117; }
 .categories::-webkit-scrollbar { display:none; }
 .cat-item { padding:6px 16px; background:#21262d; border-radius:16px; font-size:13px; white-space:nowrap; cursor:pointer; border:1px solid transparent; }
 .cat-item.active { background:#1f6feb; color:#fff; }
-.cat-item:hover { border-color:#58a6ff; }
 
 /* 商户入驻横幅 */
 .merchant-banner { margin:12px 16px; padding:16px; background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%); border-radius:12px; border:1px solid #30363d; }
@@ -45,7 +47,7 @@ a { color:inherit; text-decoration:none; }
 
 /* 商品网格 */
 .products { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding:12px 16px; }
-.product-card { background:#161b22; border-radius:12px; overflow:hidden; border:1px solid #21262d; cursor:pointer; transition:transform .2s; }
+.product-card { background:#161b22; border-radius:12px; overflow:hidden; border:1px solid #21262d; cursor:pointer; }
 .product-card:active { transform:scale(.98); }
 .product-card img { width:100%; aspect-ratio:1; object-fit:cover; background:#21262d; }
 .product-card .info { padding:10px; }
@@ -54,11 +56,6 @@ a { color:inherit; text-decoration:none; }
 .product-card .price { display:flex; align-items:baseline; gap:4px; }
 .product-card .price .num { font-size:15px; color:#f0b429; font-weight:bold; }
 .product-card .price .unit { font-size:11px; color:#8b949e; }
-.product-card .crypto { font-size:11px; color:#3fb950; margin-top:4px; }
-
-/* 页面容器 */
-.page { display:none; padding:16px; }
-.page.active { display:block; }
 
 /* 购物车 */
 .cart-item { display:flex; gap:12px; padding:12px; background:#161b22; border-radius:12px; margin-bottom:12px; border:1px solid #21262d; }
@@ -76,64 +73,91 @@ a { color:inherit; text-decoration:none; }
 .checkout-bar.show { display:flex; }
 .checkout-bar .total { font-size:14px; }
 .checkout-bar .total .num { font-size:20px; color:#f0b429; font-weight:bold; }
-.checkout-bar .total .unit { font-size:12px; color:#8b949e; }
 .checkout-bar button { padding:12px 24px; background:#3fb950; color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer; }
 
-/* 商户中心 */
-.merchant-panel { background:#161b22; border-radius:12px; padding:16px; margin-bottom:16px; border:1px solid #21262d; }
-.merchant-panel h3 { font-size:16px; margin-bottom:12px; color:#58a6ff; }
-.merchant-panel .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
-.merchant-panel .stat { text-align:center; padding:12px; background:#21262d; border-radius:8px; }
-.merchant-panel .stat .val { font-size:20px; font-weight:bold; color:#f0b429; }
-.merchant-panel .stat .lbl { font-size:11px; color:#8b949e; margin-top:4px; }
+/* 面板样式 */
+.panel { background:#161b22; border-radius:12px; padding:16px; margin-bottom:16px; border:1px solid #21262d; }
+.panel h3 { font-size:16px; margin-bottom:12px; color:#58a6ff; }
+.panel .stats { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.panel .stat { text-align:center; padding:12px; background:#21262d; border-radius:8px; }
+.panel .stat .val { font-size:20px; font-weight:bold; color:#f0b429; }
+.panel .stat .lbl { font-size:11px; color:#8b949e; margin-top:4px; }
+
+/* 订单卡片 */
+.order-card { background:#161b22; border-radius:12px; padding:16px; margin-bottom:12px; border:1px solid #21262d; }
+.order-card .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.order-card .order-id { font-size:12px; color:#8b949e; }
+.order-card .status { font-size:12px; padding:4px 10px; border-radius:12px; }
+.status.pending { background:#d29922; color:#000; }
+.status.paid { background:#58a6ff; color:#fff; }
+.status.shipped { background:#a371f7; color:#fff; }
+.status.completed { background:#3fb950; color:#fff; }
+.status.refunding { background:#f85149; color:#fff; }
+.order-card .items { font-size:13px; margin-bottom:8px; color:#8b949e; }
+.order-card .total { font-size:16px; color:#f0b429; font-weight:bold; }
+.order-card .actions { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+.order-card .actions button { padding:8px 16px; border-radius:6px; border:none; font-size:12px; cursor:pointer; }
 
 /* 表单 */
 .form-group { margin-bottom:16px; }
 .form-group label { display:block; font-size:13px; color:#8b949e; margin-bottom:6px; }
 .form-group input, .form-group textarea, .form-group select { width:100%; padding:12px; border-radius:8px; border:1px solid #30363d; background:#21262d; color:#e6edf3; font-size:14px; outline:none; }
-.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color:#58a6ff; }
-.form-group textarea { resize:vertical; min-height:100px; }
+.form-group input:focus, .form-group textarea:focus { border-color:#58a6ff; }
+.form-group textarea { resize:vertical; min-height:80px; }
 
+/* 按钮 */
 .btn { padding:12px 24px; border-radius:8px; border:none; font-size:14px; font-weight:bold; cursor:pointer; }
 .btn-primary { background:#58a6ff; color:#fff; }
 .btn-success { background:#3fb950; color:#fff; }
 .btn-warning { background:#f0b429; color:#000; }
+.btn-danger { background:#f85149; color:#fff; }
+.btn-small { padding:8px 16px; font-size:12px; }
 
 /* 弹窗 */
-.modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.8); z-index:200; align-items:center; justify-content:center; padding:20px; }
+.modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.85); z-index:200; align-items:center; justify-content:center; padding:16px; }
 .modal.show { display:flex; }
-.modal-content { background:#161b22; border-radius:16px; width:100%; max-width:400px; max-height:80vh; overflow-y:auto; }
+.modal-content { background:#161b22; border-radius:16px; width:100%; max-width:400px; max-height:85vh; overflow-y:auto; }
 .modal-header { padding:16px; border-bottom:1px solid #30363d; display:flex; justify-content:space-between; align-items:center; }
 .modal-header h3 { font-size:16px; }
 .modal-header .close { font-size:24px; cursor:pointer; color:#8b949e; }
 .modal-body { padding:16px; }
 
-/* 支付方式 */
-.payment-options { display:flex; flex-direction:column; gap:12px; }
-.payment-option { padding:16px; background:#21262d; border-radius:12px; border:2px solid transparent; cursor:pointer; display:flex; align-items:center; gap:12px; }
-.payment-option.selected { border-color:#58a6ff; }
-.payment-option .icon { font-size:28px; }
-.payment-option .info { flex:1; }
-.payment-option .name { font-size:14px; font-weight:bold; }
-.payment-option .addr { font-size:11px; color:#8b949e; word-break:break-all; }
+/* 支付二维码 */
+.payment-qr { text-align:center; padding:20px; }
+.payment-qr .address { word-break:break-all; font-size:11px; color:#8b949e; margin-top:12px; padding:8px; background:#21262d; border-radius:8px; }
+.payment-qr .amount { font-size:28px; font-weight:bold; color:#f0b429; margin:16px 0; }
 
-/* 订单状态 */
-.order-item { background:#161b22; border-radius:12px; padding:16px; margin-bottom:12px; border:1px solid #21262d; }
-.order-item .header { display:flex; justify-content:space-between; margin-bottom:12px; }
-.order-item .order-id { font-size:12px; color:#8b949e; }
-.order-item .status { font-size:12px; padding:4px 8px; border-radius:4px; }
-.order-item .status.pending { background:#d29922; color:#000; }
-.order-item .status.paid { background:#3fb950; color:#fff; }
-.order-item .status.shipped { background:#58a6ff; color:#fff; }
-.order-item .products { font-size:13px; margin-bottom:8px; }
-.order-item .total { font-size:14px; color:#f0b429; font-weight:bold; }
+/* 管理后台标签 */
+.admin-tabs { display:flex; gap:4px; margin-bottom:16px; background:#21262d; border-radius:8px; padding:4px; }
+.admin-tab { flex:1; padding:10px; text-align:center; border-radius:6px; font-size:13px; cursor:pointer; color:#8b949e; }
+.admin-tab.active { background:#1f6feb; color:#fff; }
 
-/* 我的店铺 */
-.my-shop { background:#161b22; border-radius:12px; padding:16px; margin-bottom:16px; border:1px solid #21262d; }
-.my-shop .shop-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
-.my-shop .shop-logo { width:60px; height:60px; border-radius:12px; background:#21262d; display:flex; align-items:center; justify-content:center; font-size:24px; }
-.my-shop .shop-name { font-size:16px; font-weight:bold; }
-.my-shop .shop-desc { font-size:12px; color:#8b949e; }
+/* 商户列表 */
+.merchant-list { display:flex; flex-direction:column; gap:12px; }
+.merchant-card { background:#21262d; border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center; }
+.merchant-card .info h4 { font-size:14px; margin-bottom:4px; }
+.merchant-card .info p { font-size:11px; color:#8b949e; }
+.merchant-card .balance { text-align:right; }
+.merchant-card .balance .val { font-size:16px; color:#f0b429; font-weight:bold; }
+.merchant-card .balance .lbl { font-size:10px; color:#8b949e; }
+
+/* 提现申请 */
+.withdraw-card { background:#21262d; border-radius:8px; padding:12px; margin-bottom:12px; }
+.withdraw-card .shop { font-size:14px; font-weight:bold; margin-bottom:8px; }
+.withdraw-card .amount { font-size:20px; color:#f0b429; font-weight:bold; }
+.withdraw-card .wallet { font-size:11px; color:#8b949e; margin:8px 0; word-break:break-all; }
+.withdraw-card .time { font-size:11px; color:#484f58; }
+
+/* 物流信息 */
+.logistics-info { background:#21262d; border-radius:8px; padding:12px; margin-top:12px; }
+.logistics-info h4 { font-size:13px; margin-bottom:8px; color:#58a6ff; }
+.logistics-info p { font-size:12px; color:#8b949e; line-height:1.6; }
+
+/* 切换角色 */
+.role-switch { position:fixed; top:56px; right:16px; z-index:50; }
+.role-btn { padding:6px 12px; border-radius:16px; font-size:11px; cursor:pointer; border:1px solid #30363d; background:#161b22; color:#8b949e; }
+.role-btn.admin { background:#f0b429; color:#000; border-color:#f0b429; }
+.role-btn.merchant { background:#3fb950; color:#fff; border-color:#3fb950; }
 
 /* 底部提示 */
 .footer-note { text-align:center; padding:20px; font-size:11px; color:#484f58; }
@@ -150,12 +174,17 @@ a { color:inherit; text-decoration:none; }
   </div>
 </div>
 
+<!-- 角色切换 -->
+<div class="role-switch">
+  <button class="role-btn" id="roleBtn" onclick="switchRole()">切换：顾客</button>
+</div>
+
 <!-- 主内容 -->
 <div class="main" id="mainContent">
   <!-- 首页 -->
   <div class="page active" id="homePage">
     <div class="search-bar">
-      <input type="text" placeholder="搜索商品、店铺..." oninput="searchProducts(this.value)">
+      <input type="text" placeholder="搜索商品..." oninput="searchProducts(this.value)">
     </div>
     
     <div class="categories" id="categories">
@@ -163,29 +192,16 @@ a { color:inherit; text-decoration:none; }
       <div class="cat-item" onclick="filterCategory('digital')">数码</div>
       <div class="cat-item" onclick="filterCategory('fashion')">服饰</div>
       <div class="cat-item" onclick="filterCategory('food')">食品</div>
-      <div class="cat-item" onclick="filterCategory('home')">家居</div>
       <div class="cat-item" onclick="filterCategory('service')">服务</div>
     </div>
     
-    <div class="merchant-banner">
+    <div class="merchant-banner" id="merchantBanner">
       <h3>🏪 商户入驻</h3>
-      <p>开店卖货，支持加密货币收款，全球用户一键购买</p>
+      <p>开店卖货，平台托管资金，安全有保障</p>
       <button onclick="showModal('merchantModal')">立即入驻</button>
     </div>
     
     <div class="products" id="productList"></div>
-  </div>
-  
-  <!-- 分类页 -->
-  <div class="page" id="categoryPage">
-    <h2 style="margin-bottom:16px;font-size:18px;">商品分类</h2>
-    <div class="categories" style="flex-wrap:wrap;padding:0;">
-      <div class="cat-item" onclick="filterCategory('digital')">📱 数码电子</div>
-      <div class="cat-item" onclick="filterCategory('fashion')">👕 服装服饰</div>
-      <div class="cat-item" onclick="filterCategory('food')">🍜 美食特产</div>
-      <div class="cat-item" onclick="filterCategory('home')">🏠 家居生活</div>
-      <div class="cat-item" onclick="filterCategory('service')">⚙️ 虚拟服务</div>
-    </div>
   </div>
   
   <!-- 购物车页 -->
@@ -198,27 +214,138 @@ a { color:inherit; text-decoration:none; }
     </div>
   </div>
   
+  <!-- 订单页 -->
+  <div class="page" id="ordersPage">
+    <h2 style="margin-bottom:16px;font-size:18px;">我的订单</h2>
+    <div id="ordersList"></div>
+  </div>
+  
+  <!-- 商户中心 -->
+  <div class="page" id="merchantPage">
+    <h2 style="margin-bottom:16px;font-size:18px;">🏪 商户中心</h2>
+    
+    <div class="panel">
+      <h3>📊 今日数据</h3>
+      <div class="stats">
+        <div class="stat"><div class="val" id="mTodayOrders">0</div><div class="lbl">订单</div></div>
+        <div class="stat"><div class="val" id="mTodaySales">0</div><div class="lbl">销售额</div></div>
+        <div class="stat"><div class="val" id="mPendingShip">0</div><div class="lbl">待发货</div></div>
+        <div class="stat"><div class="val" id="mBalance">0</div><div class="lbl">可提现</div></div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <h3>📦 订单管理</h3>
+      <div id="merchantOrders"></div>
+    </div>
+    
+    <div class="panel">
+      <h3>💰 提现</h3>
+      <div class="form-group">
+        <label>提现金额 (USDT)</label>
+        <input type="number" id="withdrawAmount" placeholder="0.00" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>收款钱包 (TRC20)</label>
+        <input type="text" id="withdrawWallet" placeholder="输入TRC20地址">
+      </div>
+      <button class="btn btn-success" onclick="requestWithdraw()">申请提现</button>
+    </div>
+    
+    <div class="panel">
+      <h3>➕ 发布商品</h3>
+      <div class="form-group">
+        <label>商品名称</label>
+        <input type="text" id="newProductName" placeholder="商品名称">
+      </div>
+      <div class="form-group">
+        <label>价格 (USDT)</label>
+        <input type="number" id="newProductPrice" placeholder="0.00" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>库存</label>
+        <input type="number" id="newProductStock" placeholder="100">
+      </div>
+      <div class="form-group">
+        <label>分类</label>
+        <select id="newProductCategory">
+          <option value="digital">数码</option>
+          <option value="fashion">服饰</option>
+          <option value="food">食品</option>
+          <option value="service">服务</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="addProduct()">发布商品</button>
+    </div>
+  </div>
+  
+  <!-- 管理后台 -->
+  <div class="page" id="adminPage">
+    <h2 style="margin-bottom:16px;font-size:18px;">🔐 管理后台</h2>
+    
+    <div class="admin-tabs">
+      <div class="admin-tab active" onclick="switchAdminTab('overview')">概览</div>
+      <div class="admin-tab" onclick="switchAdminTab('orders')">订单</div>
+      <div class="admin-tab" onclick="switchAdminTab('merchants')">商户</div>
+      <div class="admin-tab" onclick="switchAdminTab('withdraws')">提现</div>
+    </div>
+    
+    <!-- 概览 -->
+    <div id="adminOverview">
+      <div class="panel">
+        <h3>📊 平台数据</h3>
+        <div class="stats">
+          <div class="stat"><div class="val" id="aTotalOrders">0</div><div class="lbl">总订单</div></div>
+          <div class="stat"><div class="val" id="aTotalSales">0</div><div class="lbl">总交易额</div></div>
+          <div class="stat"><div class="val" id="aTotalMerchants">0</div><div class="lbl">商户数</div></div>
+          <div class="stat"><div class="val" id="aPlatformBalance">0</div><div class="lbl">托管资金</div></div>
+        </div>
+      </div>
+      
+      <div class="panel">
+        <h3>💼 平台收款钱包</h3>
+        <div class="form-group">
+          <label>USDT-TRC20 收款地址</label>
+          <input type="text" id="platformWallet" placeholder="输入平台TRC20收款地址">
+        </div>
+        <button class="btn btn-warning" onclick="savePlatformWallet()">保存</button>
+      </div>
+    </div>
+    
+    <!-- 订单管理 -->
+    <div id="adminOrders" style="display:none;">
+      <div id="adminOrdersList"></div>
+    </div>
+    
+    <!-- 商户管理 -->
+    <div id="adminMerchants" style="display:none;">
+      <div id="adminMerchantsList" class="merchant-list"></div>
+    </div>
+    
+    <!-- 提现管理 -->
+    <div id="adminWithdraws" style="display:none;">
+      <div id="adminWithdrawsList"></div>
+    </div>
+  </div>
+  
   <!-- 我的页 -->
   <div class="page" id="profilePage">
     <h2 style="margin-bottom:16px;font-size:18px;">我的</h2>
     
-    <div class="merchant-panel">
-      <h3>📊 我的店铺</h3>
+    <div class="panel">
+      <h3>👤 当前身份</h3>
+      <div id="currentRole" style="font-size:14px;padding:12px;background:#21262d;border-radius:8px;">顾客</div>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="switchRole()">切换身份</button>
+    </div>
+    
+    <div class="panel" id="myShopPanel" style="display:none;">
+      <h3>🏪 我的店铺</h3>
       <div id="myShopInfo"></div>
     </div>
     
-    <div class="merchant-panel">
+    <div class="panel">
       <h3>📦 我的订单</h3>
-      <div id="myOrders"></div>
-    </div>
-    
-    <div class="merchant-panel">
-      <h3>⚙️ 设置</h3>
-      <div class="form-group">
-        <label>收款钱包地址（USDT-TRC20）</label>
-        <input type="text" id="walletAddr" placeholder="输入您的TRC20钱包地址">
-      </div>
-      <button class="btn btn-primary" onclick="saveWallet()">保存</button>
+      <button class="btn btn-small btn-primary" onclick="showPage('orders')">查看全部订单</button>
     </div>
   </div>
 </div>
@@ -228,22 +355,22 @@ a { color:inherit; text-decoration:none; }
   <div class="total">
     合计: <span class="num" id="totalPrice">0.00</span> <span class="unit">USDT</span>
   </div>
-  <button onclick="showModal('paymentModal')">去结算</button>
+  <button onclick="showModal('paymentModal')">去支付</button>
 </div>
 
 <!-- 底部导航 -->
-<div class="bottom-nav">
+<div class="bottom-nav" id="bottomNav">
   <div class="nav-item active" onclick="showPage('home')">
     <span class="icon">🏠</span>
     <span>首页</span>
   </div>
-  <div class="nav-item" onclick="showPage('category')">
-    <span class="icon">📂</span>
-    <span>分类</span>
-  </div>
   <div class="nav-item" onclick="showPage('cart')">
     <span class="icon">🛒</span>
     <span>购物车</span>
+  </div>
+  <div class="nav-item" onclick="showPage('orders')">
+    <span class="icon">📦</span>
+    <span>订单</span>
   </div>
   <div class="nav-item" onclick="showPage('profile')">
     <span class="icon">👤</span>
@@ -268,18 +395,8 @@ a { color:inherit; text-decoration:none; }
         <textarea id="shopDesc" placeholder="介绍您的店铺"></textarea>
       </div>
       <div class="form-group">
-        <label>主营类目</label>
-        <select id="shopCategory">
-          <option value="digital">数码电子</option>
-          <option value="fashion">服装服饰</option>
-          <option value="food">美食特产</option>
-          <option value="home">家居生活</option>
-          <option value="service">虚拟服务</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>收款钱包（USDT-TRC20）</label>
-        <input type="text" id="shopWallet" placeholder="输入TRC20钱包地址">
+        <label>收款钱包 (USDT-TRC20)</label>
+        <input type="text" id="shopWallet" placeholder="输入TRC20地址">
       </div>
       <button class="btn btn-success" style="width:100%;" onclick="registerShop()">提交入驻</button>
     </div>
@@ -301,109 +418,166 @@ a { color:inherit; text-decoration:none; }
 <div class="modal" id="paymentModal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>💰 选择支付方式</h3>
+      <h3>💰 支付</h3>
       <span class="close" onclick="closeModal('paymentModal')">×</span>
     </div>
     <div class="modal-body">
-      <div class="payment-options">
-        <div class="payment-option selected" onclick="selectPayment(this, 'usdt')">
-          <span class="icon">💵</span>
-          <div class="info">
-            <div class="name">USDT (TRC20)</div>
-            <div class="addr">泰达币 · 低手续费</div>
-          </div>
-        </div>
-        <div class="payment-option" onclick="selectPayment(this, 'btc')">
-          <span class="icon">₿</span>
-          <div class="info">
-            <div class="name">Bitcoin (BTC)</div>
-            <div class="addr">比特币</div>
-          </div>
-        </div>
-        <div class="payment-option" onclick="selectPayment(this, 'eth')">
-          <span class="icon">Ξ</span>
-          <div class="info">
-            <div class="name">Ethereum (ETH)</div>
-            <div class="addr">以太坊</div>
-          </div>
-        </div>
+      <div class="payment-qr">
+        <div style="font-size:48px;">💵</div>
+        <div class="amount"><span id="payAmount">0.00</span> USDT</div>
+        <div style="font-size:13px;color:#8b949e;margin-bottom:12px;">请转账至平台托管账户</div>
+        <div class="address" id="paymentAddress">请先在管理后台设置收款地址</div>
       </div>
-      <div style="margin-top:20px;text-align:center;">
-        <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">支付金额</div>
-        <div style="font-size:28px;font-weight:bold;color:#f0b429;"><span id="payAmount">0.00</span> USDT</div>
+      <div style="font-size:12px;color:#d29922;margin:16px 0;padding:12px;background:#3a2a1a;border-radius:8px;">
+        ⚠️ 资金由平台托管，确认收货后自动转入商户账户
       </div>
-      <button class="btn btn-success" style="width:100%;margin-top:20px;" onclick="confirmPayment()">确认支付</button>
+      <div class="form-group">
+        <label>交易哈希 (TxID)</label>
+        <input type="text" id="txHash" placeholder="粘贴交易哈希">
+      </div>
+      <button class="btn btn-success" style="width:100%;" onclick="confirmPayment()">我已转账</button>
     </div>
   </div>
 </div>
 
-<!-- 添加商品弹窗 -->
-<div class="modal" id="addProductModal">
+<!-- 发货弹窗 -->
+<div class="modal" id="shipModal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>➕ 发布商品</h3>
-      <span class="close" onclick="closeModal('addProductModal')">×</span>
+      <h3>📦 填写物流</h3>
+      <span class="close" onclick="closeModal('shipModal')">×</span>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label>商品名称</label>
-        <input type="text" id="productName" placeholder="输入商品名称">
-      </div>
-      <div class="form-group">
-        <label>商品描述</label>
-        <textarea id="productDesc" placeholder="描述您的商品"></textarea>
-      </div>
-      <div class="form-group">
-        <label>价格 (USDT)</label>
-        <input type="number" id="productPrice" placeholder="0.00" step="0.01">
-      </div>
-      <div class="form-group">
-        <label>库存</label>
-        <input type="number" id="productStock" placeholder="100">
-      </div>
-      <div class="form-group">
-        <label>商品分类</label>
-        <select id="productCategory">
-          <option value="digital">数码电子</option>
-          <option value="fashion">服装服饰</option>
-          <option value="food">美食特产</option>
-          <option value="home">家居生活</option>
-          <option value="service">虚拟服务</option>
+        <label>快递公司</label>
+        <select id="shipCompany">
+          <option value="顺丰">顺丰速运</option>
+          <option value="圆通">圆通快递</option>
+          <option value="中通">中通快递</option>
+          <option value="韵达">韵达快递</option>
+          <option value="申通">申通快递</option>
+          <option value="邮政">中国邮政</option>
+          <option value="京东">京东物流</option>
         </select>
       </div>
-      <button class="btn btn-success" style="width:100%;" onclick="addProduct()">发布商品</button>
+      <div class="form-group">
+        <label>快递单号</label>
+        <input type="text" id="shipTracking" placeholder="输入快递单号">
+      </div>
+      <input type="hidden" id="shipOrderId">
+      <button class="btn btn-success" style="width:100%;" onclick="confirmShip()">确认发货</button>
     </div>
   </div>
 </div>
 
 <div class="footer-note">
-  © 2025 CryptoMall 加密商城 · 支持加密货币支付
+  © 2025 CryptoMall · 平台托管 · 安全交易
 </div>
 
 <script>
-// 示例数据
-let shops = JSON.parse(localStorage.getItem('cryptoShops') || '[]');
-let products = JSON.parse(localStorage.getItem('cryptoProducts') || '[]');
+// ========== 数据存储 ==========
+let currentRole = localStorage.getItem('currentRole') || 'customer'; // customer, merchant, admin
+let myShop = JSON.parse(localStorage.getItem('myShop') || 'null');
 let cart = JSON.parse(localStorage.getItem('cryptoCart') || '[]');
 let orders = JSON.parse(localStorage.getItem('cryptoOrders') || '[]');
-let myShop = JSON.parse(localStorage.getItem('myShop') || 'null');
+let merchants = JSON.parse(localStorage.getItem('cryptoMerchants') || '[]');
+let products = JSON.parse(localStorage.getItem('cryptoProducts') || '[]');
+let withdraws = JSON.parse(localStorage.getItem('cryptoWithdraws') || '[]');
+let platformWallet = localStorage.getItem('platformWallet') || '';
 
-// 初始化示例数据
+// 初始化示例商品
 if (products.length === 0) {
   products = [
-    { id:1, shop:'数码旗舰店', shopId:1, name:'无线蓝牙耳机 降噪版', price:29.9, category:'digital', img:'🎧', stock:100, desc:'主动降噪，续航30小时' },
-    { id:2, shop:'潮流服饰', shopId:2, name:'纯棉T恤 简约款', price:9.9, category:'fashion', img:'👕', stock:500, desc:'100%纯棉，多色可选' },
-    { id:3, shop:'美食工坊', shopId:3, name:'手工牛肉干 500g', price:15.5, category:'food', img:'🥩', stock:50, desc:'内蒙古黄牛肉，自然风干' },
-    { id:4, shop:'智能生活', shopId:4, name:'智能手表 运动版', price:59.9, category:'digital', img:'⌚', stock:80, desc:'心率监测，GPS定位，IP68防水' },
-    { id:5, shop:'家居优选', shopId:5, name:'北欧风台灯', price:19.9, category:'home', img:'💡', stock:200, desc:'三档调光，护眼LED' },
-    { id:6, shop:'虚拟服务', shopId:6, name:'ChatGPT Plus 代充', price:5.0, category:'service', img:'🤖', stock:999, desc:'官方正版，即时到账' },
-    { id:7, shop:'数码旗舰店', shopId:1, name:'机械键盘 青轴', price:45.0, category:'digital', img:'⌨️', stock:60, desc:'RGB背光，金属面板' },
-    { id:8, shop:'潮流服饰', shopId:2, name:'运动鞋 透气款', price:35.0, category:'fashion', img:'👟', stock:120, desc:'飞织网面，轻便舒适' },
+    { id:1, shopId:1, shop:'数码旗舰店', name:'无线蓝牙耳机', price:29.9, category:'digital', img:'🎧', stock:100 },
+    { id:2, shopId:2, shop:'潮流服饰', name:'纯棉T恤', price:9.9, category:'fashion', img:'👕', stock:500 },
+    { id:3, shopId:3, shop:'美食工坊', name:'手工牛肉干', price:15.5, category:'food', img:'🥩', stock:50 },
+    { id:4, shopId:1, shop:'数码旗舰店', name:'智能手表', price:59.9, category:'digital', img:'⌚', stock:80 },
+    { id:5, shopId:4, shop:'虚拟服务', name:'ChatGPT代充', price:5.0, category:'service', img:'🤖', stock:999 },
+  ];
+  merchants = [
+    { id:1, name:'数码旗舰店', wallet:'TRX123456...ABC', balance:150.5, sales:500 },
+    { id:2, name:'潮流服饰', wallet:'TRX789012...DEF', balance:89.2, sales:320 },
+    { id:3, name:'美食工坊', wallet:'TRX345678...GHI', balance:45.8, sales:200 },
+    { id:4, name:'虚拟服务', wallet:'TRX901234...JKL', balance:320.0, sales:1200 },
   ];
   localStorage.setItem('cryptoProducts', JSON.stringify(products));
+  localStorage.setItem('cryptoMerchants', JSON.stringify(merchants));
 }
 
-// 渲染商品
+// ========== 角色切换 ==========
+function switchRole() {
+  const roles = ['customer', 'merchant', 'admin'];
+  const names = { customer: '顾客', merchant: '商户', admin: '管理员' };
+  const idx = roles.indexOf(currentRole);
+  currentRole = roles[(idx + 1) % roles.length];
+  localStorage.setItem('currentRole', currentRole);
+  
+  document.getElementById('roleBtn').textContent = '切换：' + names[currentRole];
+  document.getElementById('roleBtn').className = 'role-btn ' + (currentRole === 'admin' ? 'admin' : currentRole === 'merchant' ? 'merchant' : '');
+  document.getElementById('currentRole').textContent = names[currentRole];
+  
+  // 显示/隐藏商户入驻横幅
+  document.getElementById('merchantBanner').style.display = currentRole === 'customer' ? 'block' : 'none';
+  
+  // 显示/隐藏店铺面板
+  document.getElementById('myShopPanel').style.display = (currentRole === 'merchant' && myShop) ? 'block' : 'none';
+  
+  // 更新底部导航
+  updateBottomNav();
+  
+  // 刷新页面内容
+  showPage('home');
+}
+
+function updateBottomNav() {
+  const nav = document.getElementById('bottomNav');
+  if (currentRole === 'admin') {
+    nav.innerHTML = `
+      <div class="nav-item active" onclick="showPage('admin')"><span class="icon">🔐</span><span>管理后台</span></div>
+      <div class="nav-item" onclick="showPage('home')"><span class="icon">🏠</span><span>商城</span></div>
+    `;
+  } else if (currentRole === 'merchant') {
+    nav.innerHTML = `
+      <div class="nav-item active" onclick="showPage('merchant')"><span class="icon">🏪</span><span>商户中心</span></div>
+      <div class="nav-item" onclick="showPage('home')"><span class="icon">🏠</span><span>商城</span></div>
+      <div class="nav-item" onclick="showPage('orders')"><span class="icon">📦</span><span>订单</span></div>
+    `;
+  } else {
+    nav.innerHTML = `
+      <div class="nav-item active" onclick="showPage('home')"><span class="icon">🏠</span><span>首页</span></div>
+      <div class="nav-item" onclick="showPage('cart')"><span class="icon">🛒</span><span>购物车</span></div>
+      <div class="nav-item" onclick="showPage('orders')"><span class="icon">📦</span><span>订单</span></div>
+      <div class="nav-item" onclick="showPage('profile')"><span class="icon">👤</span><span>我的</span></div>
+    `;
+  }
+}
+
+// ========== 页面切换 ==========
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  
+  const pageId = page + 'Page';
+  const pageEl = document.getElementById(pageId);
+  if (pageEl) pageEl.classList.add('active');
+  
+  // 更新导航高亮
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    if (item.textContent.includes(page === 'admin' ? '管理' : page === 'merchant' ? '商户' : page === 'home' ? '首页' : page === 'cart' ? '购物车' : page === 'orders' ? '订单' : '我的')) {
+      item.classList.add('active');
+    }
+  });
+  
+  // 渲染页面内容
+  if (page === 'cart') renderCart();
+  if (page === 'orders') renderOrders();
+  if (page === 'merchant') renderMerchant();
+  if (page === 'admin') renderAdmin();
+  if (page === 'profile') renderProfile();
+}
+
+// ========== 商品渲染 ==========
 function renderProducts(list) {
   const el = document.getElementById('productList');
   el.innerHTML = list.map(p => `
@@ -412,32 +586,62 @@ function renderProducts(list) {
       <div class="info">
         <div class="shop">${p.shop}</div>
         <div class="name">${p.name}</div>
-        <div class="price">
-          <span class="num">${p.price.toFixed(2)}</span>
-          <span class="unit">USDT</span>
-        </div>
+        <div class="price"><span class="num">${p.price.toFixed(2)}</span><span class="unit">USDT</span></div>
       </div>
     </div>
   `).join('');
 }
 
-// 渲染购物车
+function showProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('productTitle').textContent = p.name;
+  document.getElementById('productDetail').innerHTML = `
+    <div style="text-align:center;padding:20px;background:#21262d;border-radius:12px;margin-bottom:16px;">
+      <span style="font-size:80px;">${p.img}</span>
+    </div>
+    <div style="font-size:11px;color:#8b949e;">${p.shop}</div>
+    <div style="font-size:16px;font-weight:bold;margin:8px 0;">${p.name}</div>
+    <div style="font-size:24px;font-weight:bold;color:#f0b429;">${p.price.toFixed(2)} <span style="font-size:14px;color:#8b949e;">USDT</span></div>
+    <button class="btn btn-success" style="width:100%;margin-top:16px;" onclick="addToCart(${p.id})">加入购物车</button>
+  `;
+  showModal('productModal');
+}
+
+function searchProducts(q) {
+  if (!q) { renderProducts(products); return; }
+  const filtered = products.filter(p => p.name.includes(q) || p.shop.includes(q));
+  renderProducts(filtered);
+}
+
+function filterCategory(cat) {
+  document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+  renderProducts(cat === 'all' ? products : products.filter(p => p.category === cat));
+}
+
+// ========== 购物车 ==========
+function addToCart(productId) {
+  const item = cart.find(x => x.productId === productId);
+  if (item) item.qty++;
+  else cart.push({ productId, qty: 1 });
+  localStorage.setItem('cryptoCart', JSON.stringify(cart));
+  updateCartBadge();
+  closeModal('productModal');
+  alert('已加入购物车');
+}
+
 function renderCart() {
   const el = document.getElementById('cartList');
   const empty = document.getElementById('cartEmpty');
   const bar = document.getElementById('checkoutBar');
   
   if (cart.length === 0) {
-    el.innerHTML = '';
-    empty.style.display = 'block';
-    bar.classList.remove('show');
-    updateCartBadge();
-    return;
+    el.innerHTML = ''; empty.style.display = 'block'; bar.classList.remove('show');
+    updateCartBadge(); return;
   }
   
-  empty.style.display = 'none';
-  bar.classList.add('show');
-  
+  empty.style.display = 'none'; bar.classList.add('show');
   let total = 0;
   el.innerHTML = cart.map(item => {
     const p = products.find(x => x.id === item.productId);
@@ -464,256 +668,60 @@ function renderCart() {
   updateCartBadge();
 }
 
-// 更新购物车徽标
-function updateCartBadge() {
-  const badge = document.getElementById('cartBadge');
-  const count = cart.reduce((sum, x) => sum + x.qty, 0);
-  badge.textContent = count;
-  badge.style.display = count > 0 ? 'inline' : 'none';
-}
-
-// 添加到购物车
-function addToCart(productId) {
-  const item = cart.find(x => x.productId === productId);
-  if (item) {
-    item.qty++;
-  } else {
-    cart.push({ productId, qty: 1 });
-  }
-  localStorage.setItem('cryptoCart', JSON.stringify(cart));
-  updateCartBadge();
-  closeModal('productModal');
-  alert('已加入购物车');
-}
-
-// 修改数量
-function changeQty(productId, delta) {
-  const item = cart.find(x => x.productId === productId);
+function changeQty(pid, delta) {
+  const item = cart.find(x => x.productId === pid);
   if (item) {
     item.qty += delta;
-    if (item.qty <= 0) {
-      cart = cart.filter(x => x.productId !== productId);
-    }
+    if (item.qty <= 0) cart = cart.filter(x => x.productId !== pid);
     localStorage.setItem('cryptoCart', JSON.stringify(cart));
     renderCart();
   }
 }
 
-// 显示商品详情
-function showProduct(id) {
-  const p = products.find(x => x.id === id);
-  if (!p) return;
-  document.getElementById('productTitle').textContent = p.name;
-  document.getElementById('productDetail').innerHTML = `
-    <div style="text-align:center;padding:20px;background:#21262d;border-radius:12px;margin-bottom:16px;">
-      <span style="font-size:80px;">${p.img}</span>
+function updateCartBadge() {
+  const badge = document.getElementById('cartBadge');
+  const count = cart.reduce((s, x) => s + x.qty, 0);
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'inline' : 'none';
+}
+
+// ========== 订单 ==========
+function renderOrders() {
+  const el = document.getElementById('ordersList');
+  const userOrders = orders.filter(o => o.buyerRole === currentRole || currentRole === 'customer');
+  
+  if (userOrders.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:#8b949e;padding:40px;">暂无订单</div>';
+    return;
+  }
+  
+  el.innerHTML = userOrders.reverse().map(o => `
+    <div class="order-card">
+      <div class="header">
+        <span class="order-id">订单 #${o.id}</span>
+        <span class="status ${o.status}">${getStatusText(o.status)}</span>
+      </div>
+      <div class="items">${o.items.map(i => i.name + ' x' + i.qty).join('、')}</div>
+      <div class="total">${o.total.toFixed(2)} USDT</div>
+      ${o.status === 'shipped' ? `
+        <div class="logistics-info">
+          <h4>📦 物流信息</h4>
+          <p>快递：${o.logistics.company}<br>单号：${o.logistics.tracking}</p>
+        </div>
+      ` : ''}
+      <div class="actions">
+        ${o.status === 'shipped' ? `<button class="btn btn-small btn-success" onclick="confirmReceive(${o.id})">确认收货</button>` : ''}
+      </div>
     </div>
-    <div style="font-size:11px;color:#8b949e;margin-bottom:4px;">${p.shop}</div>
-    <div style="font-size:16px;font-weight:bold;margin-bottom:8px;">${p.name}</div>
-    <div style="font-size:12px;color:#8b949e;margin-bottom:16px;">${p.desc}</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div style="font-size:24px;font-weight:bold;color:#f0b429;">${p.price.toFixed(2)} <span style="font-size:14px;color:#8b949e;">USDT</span></div>
-      <div style="font-size:12px;color:#8b949e;">库存 ${p.stock}</div>
-    </div>
-    <button class="btn btn-success" style="width:100%;" onclick="addToCart(${p.id})">加入购物车</button>
-  `;
-  showModal('productModal');
+  `).join('');
 }
 
-// 搜索商品
-function searchProducts(query) {
-  if (!query) {
-    renderProducts(products);
-    return;
-  }
-  const q = query.toLowerCase();
-  const filtered = products.filter(p => 
-    p.name.toLowerCase().includes(q) || 
-    p.shop.toLowerCase().includes(q)
-  );
-  renderProducts(filtered);
+function getStatusText(s) {
+  const map = { pending: '待支付', paid: '待发货', shipped: '已发货', completed: '已完成', refunding: '退款中' };
+  return map[s] || s;
 }
 
-// 分类筛选
-function filterCategory(cat) {
-  document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
-  event.target.classList.add('active');
-  
-  if (cat === 'all') {
-    renderProducts(products);
-  } else {
-    renderProducts(products.filter(p => p.category === cat));
-  }
-  showPage('home');
-}
-
-// 页面切换
-function showPage(page) {
-  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  
-  const pageId = page + 'Page';
-  document.getElementById(pageId).classList.add('active');
-  
-  const navMap = { home: 0, category: 1, cart: 2, profile: 3 };
-  document.querySelectorAll('.nav-item')[navMap[page] || 0].classList.add('active');
-  
-  if (page === 'cart') renderCart();
-  if (page === 'profile') renderProfile();
-}
-
-// 渲染个人中心
-function renderProfile() {
-  const shopInfo = document.getElementById('myShopInfo');
-  const ordersEl = document.getElementById('myOrders');
-  
-  if (myShop) {
-    shopInfo.innerHTML = `
-      <div class="my-shop">
-        <div class="shop-header">
-          <div class="shop-logo">🏪</div>
-          <div>
-            <div class="shop-name">${myShop.name}</div>
-            <div class="shop-desc">${myShop.desc}</div>
-          </div>
-        </div>
-        <div class="stats">
-          <div class="stat"><div class="val">${myShop.sales || 0}</div><div class="lbl">销量</div></div>
-          <div class="stat"><div class="val">${myShop.products || 0}</div><div class="lbl">商品</div></div>
-          <div class="stat"><div class="val">${(myShop.revenue || 0).toFixed(1)}</div><div class="lbl">收入</div></div>
-        </div>
-        <button class="btn btn-warning" style="width:100%;" onclick="showModal('addProductModal')">➕ 发布商品</button>
-      </div>
-    `;
-  } else {
-    shopInfo.innerHTML = `
-      <div style="text-align:center;padding:20px;color:#8b949e;">
-        <div style="font-size:36px;margin-bottom:12px;">🏪</div>
-        <div>暂未开店</div>
-        <button class="btn btn-primary" style="margin-top:12px;" onclick="showModal('merchantModal')">立即入驻</button>
-      </div>
-    `;
-  }
-  
-  if (orders.length > 0) {
-    ordersEl.innerHTML = orders.slice(-5).reverse().map(o => `
-      <div class="order-item">
-        <div class="header">
-          <span class="order-id">订单 #${o.id}</span>
-          <span class="status ${o.status}">${o.status === 'pending' ? '待支付' : o.status === 'paid' ? '已支付' : '已发货'}</span>
-        </div>
-        <div class="products">${o.items.map(i => i.name).join('、')}</div>
-        <div class="total">${o.total.toFixed(2)} USDT</div>
-      </div>
-    `).join('');
-  } else {
-    ordersEl.innerHTML = `<div style="text-align:center;color:#8b949e;padding:20px;">暂无订单</div>`;
-  }
-}
-
-// 注册店铺
-function registerShop() {
-  const name = document.getElementById('shopName').value.trim();
-  const desc = document.getElementById('shopDesc').value.trim();
-  const category = document.getElementById('shopCategory').value;
-  const wallet = document.getElementById('shopWallet').value.trim();
-  
-  if (!name || !wallet) {
-    alert('请填写店铺名称和收款钱包');
-    return;
-  }
-  
-  myShop = { id: Date.now(), name, desc, category, wallet, sales: 0, products: 0, revenue: 0 };
-  localStorage.setItem('myShop', JSON.stringify(myShop));
-  
-  closeModal('merchantModal');
-  renderProfile();
-  alert('入驻成功！');
-}
-
-// 添加商品
-function addProduct() {
-  if (!myShop) {
-    alert('请先开店');
-    return;
-  }
-  
-  const name = document.getElementById('productName').value.trim();
-  const desc = document.getElementById('productDesc').value.trim();
-  const price = parseFloat(document.getElementById('productPrice').value);
-  const stock = parseInt(document.getElementById('productStock').value);
-  const category = document.getElementById('productCategory').value;
-  
-  if (!name || !price) {
-    alert('请填写商品名称和价格');
-    return;
-  }
-  
-  const emojis = ['📦','🎁','💎','📱','💻','🎮','🎧','⌚','👕','👟','👜','💄','🍜','🍕','🍔','🎂','💡','🛋️','🧸','📚'];
-  const img = emojis[Math.floor(Math.random() * emojis.length)];
-  
-  const product = {
-    id: Date.now(),
-    shop: myShop.name,
-    shopId: myShop.id,
-    name, desc, price, stock, category, img
-  };
-  
-  products.push(product);
-  localStorage.setItem('cryptoProducts', JSON.stringify(products));
-  
-  myShop.products = (myShop.products || 0) + 1;
-  localStorage.setItem('myShop', JSON.stringify(myShop));
-  
-  closeModal('addProductModal');
-  renderProducts(products);
-  alert('商品发布成功！');
-}
-
-// 支付选择
-let selectedPayment = 'usdt';
-function selectPayment(el, type) {
-  document.querySelectorAll('.payment-option').forEach(e => e.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedPayment = type;
-}
-
-// 确认支付
-function confirmPayment() {
-  if (cart.length === 0) return;
-  
-  let total = 0;
-  const items = cart.map(item => {
-    const p = products.find(x => x.id === item.productId);
-    if (p) {
-      total += p.price * item.qty;
-      return { name: p.name, price: p.price, qty: item.qty };
-    }
-    return null;
-  }).filter(Boolean);
-  
-  const order = {
-    id: Date.now(),
-    items,
-    total,
-    payment: selectedPayment,
-    status: 'paid',
-    time: new Date().toISOString()
-  };
-  
-  orders.push(order);
-  localStorage.setItem('cryptoOrders', JSON.stringify(orders));
-  
-  // 清空购物车
-  cart = [];
-  localStorage.setItem('cryptoCart', JSON.stringify(cart));
-  
-  closeModal('paymentModal');
-  showPage('profile');
-  alert('支付成功！订单已生成');
-}
-
-// 弹窗控制
+// ========== 支付 ==========
 function showModal(id) {
   document.getElementById(id).classList.add('show');
   if (id === 'paymentModal') {
@@ -722,29 +730,341 @@ function showModal(id) {
       return sum + (p ? p.price * item.qty : 0);
     }, 0);
     document.getElementById('payAmount').textContent = total.toFixed(2);
+    document.getElementById('paymentAddress').textContent = platformWallet || '请先在管理后台设置收款地址';
   }
 }
 
-function closeModal(id) {
-  document.getElementById(id).classList.remove('show');
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function confirmPayment() {
+  if (cart.length === 0) return;
+  if (!platformWallet) { alert('平台未设置收款地址'); return; }
+  
+  const txHash = document.getElementById('txHash').value.trim();
+  if (!txHash) { alert('请输入交易哈希'); return; }
+  
+  let total = 0;
+  const items = cart.map(item => {
+    const p = products.find(x => x.id === item.productId);
+    if (p) { total += p.price * item.qty; return { name: p.name, price: p.price, qty: item.qty, shopId: p.shopId }; }
+    return null;
+  }).filter(Boolean);
+  
+  const order = {
+    id: Date.now(),
+    items, total,
+    txHash,
+    status: 'paid',
+    buyerRole: currentRole,
+    time: new Date().toISOString()
+  };
+  
+  orders.push(order);
+  localStorage.setItem('cryptoOrders', JSON.stringify(orders));
+  
+  cart = [];
+  localStorage.setItem('cryptoCart', JSON.stringify(cart));
+  
+  closeModal('paymentModal');
+  showPage('orders');
+  alert('支付成功！等待商户发货');
 }
 
-// 保存钱包
-function saveWallet() {
-  const addr = document.getElementById('walletAddr').value.trim();
-  if (addr) {
-    localStorage.setItem('userWallet', addr);
-    alert('保存成功');
+function confirmReceive(orderId) {
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+  
+  order.status = 'completed';
+  localStorage.setItem('cryptoOrders', JSON.stringify(orders));
+  
+  // 将资金转入商户账户
+  order.items.forEach(item => {
+    const merchant = merchants.find(m => m.id === item.shopId);
+    if (merchant) {
+      merchant.balance += item.price * item.qty;
+    }
+  });
+  localStorage.setItem('cryptoMerchants', JSON.stringify(merchants));
+  
+  renderOrders();
+  alert('已确认收货，资金已转入商户账户');
+}
+
+// ========== 商户中心 ==========
+function renderMerchant() {
+  if (!myShop) {
+    document.getElementById('merchantPage').innerHTML = `
+      <h2 style="margin-bottom:16px;font-size:18px;">🏪 商户中心</h2>
+      <div class="panel">
+        <div style="text-align:center;padding:40px;">
+          <div style="font-size:48px;margin-bottom:16px;">🏪</div>
+          <div style="color:#8b949e;margin-bottom:16px;">您还未开店</div>
+          <button class="btn btn-success" onclick="showModal('merchantModal')">立即入驻</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  
+  // 统计数据
+  const shopOrders = orders.filter(o => o.items.some(i => i.shopId === myShop.id));
+  const todayOrders = shopOrders.filter(o => new Date(o.time).toDateString() === new Date().toDateString());
+  const pendingShip = shopOrders.filter(o => o.status === 'paid');
+  const balance = merchants.find(m => m.id === myShop.id)?.balance || 0;
+  
+  document.getElementById('mTodayOrders').textContent = todayOrders.length;
+  document.getElementById('mTodaySales').textContent = todayOrders.reduce((s, o) => s + o.total, 0).toFixed(1);
+  document.getElementById('mPendingShip').textContent = pendingShip.length;
+  document.getElementById('mBalance').textContent = balance.toFixed(1);
+  
+  // 订单列表
+  const ordersEl = document.getElementById('merchantOrders');
+  ordersEl.innerHTML = shopOrders.slice(-5).reverse().map(o => `
+    <div class="order-card">
+      <div class="header">
+        <span class="order-id">#${o.id}</span>
+        <span class="status ${o.status}">${getStatusText(o.status)}</span>
+      </div>
+      <div class="items">${o.items.map(i => i.name).join('、')}</div>
+      <div class="total">${o.total.toFixed(2)} USDT</div>
+      ${o.status === 'paid' ? `<div class="actions"><button class="btn btn-small btn-warning" onclick="showShipModal(${o.id})">发货</button></div>` : ''}
+      ${o.status === 'shipped' ? `<div class="logistics-info"><p>快递：${o.logistics.company} ${o.logistics.tracking}</p></div>` : ''}
+    </div>
+  `).join('') || '<div style="color:#8b949e;text-align:center;padding:20px;">暂无订单</div>';
+}
+
+function showShipModal(orderId) {
+  document.getElementById('shipOrderId').value = orderId;
+  showModal('shipModal');
+}
+
+function confirmShip() {
+  const orderId = parseInt(document.getElementById('shipOrderId').value);
+  const company = document.getElementById('shipCompany').value;
+  const tracking = document.getElementById('shipTracking').value.trim();
+  
+  if (!tracking) { alert('请输入快递单号'); return; }
+  
+  const order = orders.find(o => o.id === orderId);
+  if (order) {
+    order.status = 'shipped';
+    order.logistics = { company, tracking };
+    localStorage.setItem('cryptoOrders', JSON.stringify(orders));
+  }
+  
+  closeModal('shipModal');
+  renderMerchant();
+  alert('发货成功');
+}
+
+function requestWithdraw() {
+  if (!myShop) { alert('请先开店'); return; }
+  
+  const amount = parseFloat(document.getElementById('withdrawAmount').value);
+  const wallet = document.getElementById('withdrawWallet').value.trim();
+  
+  if (!amount || amount <= 0) { alert('请输入提现金额'); return; }
+  if (!wallet) { alert('请输入收款钱包'); return; }
+  
+  const merchant = merchants.find(m => m.id === myShop.id);
+  if (!merchant || merchant.balance < amount) { alert('余额不足'); return; }
+  
+  merchant.balance -= amount;
+  localStorage.setItem('cryptoMerchants', JSON.stringify(merchants));
+  
+  withdraws.push({
+    id: Date.now(),
+    shopId: myShop.id,
+    shopName: myShop.name,
+    amount,
+    wallet,
+    status: 'pending',
+    time: new Date().toISOString()
+  });
+  localStorage.setItem('cryptoWithdraws', JSON.stringify(withdraws));
+  
+  alert('提现申请已提交，等待管理员处理');
+  document.getElementById('withdrawAmount').value = '';
+  renderMerchant();
+}
+
+// ========== 管理后台 ==========
+function switchAdminTab(tab) {
+  document.querySelectorAll('.admin-tab').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  document.getElementById('adminOverview').style.display = tab === 'overview' ? 'block' : 'none';
+  document.getElementById('adminOrders').style.display = tab === 'orders' ? 'block' : 'none';
+  document.getElementById('adminMerchants').style.display = tab === 'merchants' ? 'block' : 'none';
+  document.getElementById('adminWithdraws').style.display = tab === 'withdraws' ? 'block' : 'none';
+  
+  if (tab === 'orders') renderAdminOrders();
+  if (tab === 'merchants') renderAdminMerchants();
+  if (tab === 'withdraws') renderAdminWithdraws();
+}
+
+function renderAdmin() {
+  // 统计数据
+  const totalSales = orders.filter(o => o.status !== 'pending').reduce((s, o) => s + o.total, 0);
+  const platformBalance = orders.filter(o => o.status === 'paid' || o.status === 'shipped').reduce((s, o) => s + o.total, 0);
+  
+  document.getElementById('aTotalOrders').textContent = orders.length;
+  document.getElementById('aTotalSales').textContent = totalSales.toFixed(1);
+  document.getElementById('aTotalMerchants').textContent = merchants.length;
+  document.getElementById('aPlatformBalance').textContent = platformBalance.toFixed(1);
+  
+  // 加载平台钱包
+  if (platformWallet) document.getElementById('platformWallet').value = platformWallet;
+}
+
+function renderAdminOrders() {
+  const el = document.getElementById('adminOrdersList');
+  el.innerHTML = orders.slice().reverse().map(o => `
+    <div class="order-card">
+      <div class="header">
+        <span class="order-id">#${o.id}</span>
+        <span class="status ${o.status}">${getStatusText(o.status)}</span>
+      </div>
+      <div class="items">${o.items.map(i => i.name).join('、')}</div>
+      <div class="total">${o.total.toFixed(2)} USDT</div>
+    </div>
+  `).join('') || '<div style="color:#8b949e;text-align:center;padding:20px;">暂无订单</div>';
+}
+
+function renderAdminMerchants() {
+  const el = document.getElementById('adminMerchantsList');
+  el.innerHTML = merchants.map(m => `
+    <div class="merchant-card">
+      <div class="info">
+        <h4>${m.name}</h4>
+        <p>${m.wallet.substring(0, 20)}...</p>
+      </div>
+      <div class="balance">
+        <div class="val">${m.balance.toFixed(1)}</div>
+        <div class="lbl">可提现</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderAdminWithdraws() {
+  const el = document.getElementById('adminWithdrawsList');
+  const pending = withdraws.filter(w => w.status === 'pending');
+  
+  el.innerHTML = pending.map(w => `
+    <div class="withdraw-card">
+      <div class="shop">${w.shopName}</div>
+      <div class="amount">${w.amount.toFixed(2)} USDT</div>
+      <div class="wallet">→ ${w.wallet}</div>
+      <div class="time">${new Date(w.time).toLocaleString()}</div>
+      <div style="margin-top:12px;">
+        <button class="btn btn-small btn-success" onclick="approveWithdraw(${w.id})">确认转账</button>
+        <button class="btn btn-small btn-danger" onclick="rejectWithdraw(${w.id})">拒绝</button>
+      </div>
+    </div>
+  `).join('') || '<div style="color:#8b949e;text-align:center;padding:20px;">暂无待处理提现</div>';
+}
+
+function savePlatformWallet() {
+  platformWallet = document.getElementById('platformWallet').value.trim();
+  localStorage.setItem('platformWallet', platformWallet);
+  alert('保存成功');
+}
+
+function approveWithdraw(id) {
+  const w = withdraws.find(x => x.id === id);
+  if (w) {
+    w.status = 'approved';
+    localStorage.setItem('cryptoWithdraws', JSON.stringify(withdraws));
+  }
+  alert('请手动转账到商户钱包，转账完成后点击确定');
+  renderAdminWithdraws();
+}
+
+function rejectWithdraw(id) {
+  const w = withdraws.find(x => x.id === id);
+  if (w) {
+    w.status = 'rejected';
+    // 退回余额
+    const m = merchants.find(x => x.id === w.shopId);
+    if (m) m.balance += w.amount;
+    localStorage.setItem('cryptoWithdraws', JSON.stringify(withdraws));
+    localStorage.setItem('cryptoMerchants', JSON.stringify(merchants));
+  }
+  renderAdminWithdraws();
+}
+
+// ========== 商户入驻 ==========
+function registerShop() {
+  const name = document.getElementById('shopName').value.trim();
+  const desc = document.getElementById('shopDesc').value.trim();
+  const wallet = document.getElementById('shopWallet').value.trim();
+  
+  if (!name || !wallet) { alert('请填写店铺名称和收款钱包'); return; }
+  
+  const id = Date.now();
+  myShop = { id, name, desc, wallet };
+  merchants.push({ id, name, wallet, balance: 0, sales: 0 });
+  
+  localStorage.setItem('myShop', JSON.stringify(myShop));
+  localStorage.setItem('cryptoMerchants', JSON.stringify(merchants));
+  
+  closeModal('merchantModal');
+  switchRole();
+  currentRole = 'merchant';
+  localStorage.setItem('currentRole', 'merchant');
+  showPage('merchant');
+  alert('入驻成功！');
+}
+
+function addProduct() {
+  if (!myShop) { alert('请先开店'); return; }
+  
+  const name = document.getElementById('newProductName').value.trim();
+  const price = parseFloat(document.getElementById('newProductPrice').value);
+  const stock = parseInt(document.getElementById('newProductStock').value) || 100;
+  const category = document.getElementById('newProductCategory').value;
+  
+  if (!name || !price) { alert('请填写商品名称和价格'); return; }
+  
+  const emojis = ['📦','🎁','💎','📱','💻','🎮','🎧','⌚','👕','👟','👜','🍜','🍕','🤖'];
+  
+  products.push({
+    id: Date.now(),
+    shopId: myShop.id,
+    shop: myShop.name,
+    name, price, stock, category,
+    img: emojis[Math.floor(Math.random() * emojis.length)]
+  });
+  
+  localStorage.setItem('cryptoProducts', JSON.stringify(products));
+  alert('商品发布成功');
+  
+  document.getElementById('newProductName').value = '';
+  document.getElementById('newProductPrice').value = '';
+  renderProducts(products);
+}
+
+function renderProfile() {
+  if (myShop) {
+    document.getElementById('myShopPanel').style.display = 'block';
+    document.getElementById('myShopInfo').innerHTML = `
+      <div style="font-size:16px;font-weight:bold;margin-bottom:8px;">${myShop.name}</div>
+      <div style="font-size:12px;color:#8b949e;">${myShop.desc || '暂无简介'}</div>
+    `;
   }
 }
 
-// 加载用户钱包
-const savedWallet = localStorage.getItem('userWallet');
-if (savedWallet) {
-  document.getElementById('walletAddr').value = savedWallet;
+// ========== 初始化 ==========
+document.getElementById('roleBtn').textContent = '切换：' + (currentRole === 'customer' ? '顾客' : currentRole === 'merchant' ? '商户' : '管理员');
+document.getElementById('roleBtn').className = 'role-btn ' + (currentRole === 'admin' ? 'admin' : currentRole === 'merchant' ? 'merchant' : '');
+document.getElementById('currentRole').textContent = currentRole === 'customer' ? '顾客' : currentRole === 'merchant' ? '商户' : '管理员';
+
+if (currentRole !== 'customer') {
+  document.getElementById('merchantBanner').style.display = 'none';
 }
 
-// 初始化
+updateBottomNav();
 renderProducts(products);
 updateCartBadge();
 </script>
