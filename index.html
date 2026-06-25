@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K线训练大师</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0d1117; color:#c9d1d9; font-family:'Microsoft YaHei','PingFang SC',sans-serif; display:flex; flex-direction:column; align-items:center; min-height:100vh; user-select:none; }
+.header { width:100%; max-width:800px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #21262d; flex-wrap:wrap; gap:8px; }
+.header h1 { font-size:22px; color:#f0f6fc; letter-spacing:2px; }
+.header h1 span { color:#58a6ff; }
+.mode-tabs { display:flex; gap:4px; background:#161b22; border-radius:8px; padding:3px; }
+.mode-tab { padding:8px 14px; border-radius:6px; cursor:pointer; font-size:13px; transition:.2s; border:none; background:transparent; color:#8b949e; }
+.mode-tab.active { background:#1f6feb; color:#fff; }
+.main { width:100%; max-width:800px; padding:12px 20px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+canvas { border-radius:8px; background:#0d1117; border:1px solid #21262d; }
+.choices { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:600px; }
+.choice-btn { padding:10px 18px; border-radius:8px; cursor:pointer; font-size:15px; border:1px solid #30363d; background:#161b22; color:#c9d1d9; transition:.2s; white-space:nowrap; }
+.choice-btn:hover { border-color:#58a6ff; background:#1f2937; }
+.choice-btn.correct { border-color:#3fb950; background:#1a3a2a; color:#3fb950; }
+.choice-btn.wrong { border-color:#f85149; background:#3a1a1a; color:#f85149; }
+.choice-btn:disabled { opacity:.6; cursor:not-allowed; }
+.dir-btns { display:flex; gap:16px; }
+.dir-btn { width:120px; height:50px; border-radius:10px; cursor:pointer; font-size:18px; font-weight:bold; border:none; transition:.2s; }
+.dir-btn.up { background:#1a3a2a; color:#3fb950; border:2px solid #238636; }
+.dir-btn.up:hover { background:#238636; color:#fff; }
+.dir-btn.down { background:#3a1a1a; color:#f85149; border:2px solid #da3633; }
+.dir-btn.down:hover { background:#da3633; color:#fff; }
+.dir-btn:disabled { opacity:.5; cursor:not-allowed; }
+.dir-btn.correct { opacity:1; }
+.dir-btn.wrong { opacity:1; }
+.result { font-size:16px; font-weight:bold; min-height:24px; text-align:center; }
+.timer { font-size:13px; color:#8b949e; text-align:center; min-height:20px; }
+.stats { display:flex; gap:24px; font-size:14px; color:#8b949e; }
+.stats b { color:#f0f6fc; }
+.scoreboard { display:flex; gap:20px; background:#161b22; border-radius:8px; padding:10px 20px; flex-wrap:wrap; justify-content:center; }
+.score-item { text-align:center; }
+.score-item .val { font-size:24px; font-weight:bold; }
+.score-item .lbl { font-size:11px; color:#8b949e; margin-top:2px; }
+.val.good { color:#3fb950; }
+.val.mid { color:#d29922; }
+.val.bad { color:#f85149; }
+.val.neutral { color:#58a6ff; }
+.pattern-name { font-size:20px; color:#58a6ff; font-weight:bold; text-align:center; min-height:28px; }
+.pattern-desc { font-size:13px; color:#8b949e; text-align:center; max-width:500px; line-height:1.6; }
+.skip-btn { padding:8px 20px; border-radius:6px; cursor:pointer; font-size:13px; border:1px solid #30363d; background:transparent; color:#8b949e; }
+.skip-btn:hover { color:#c9d1d9; border-color:#58a6ff; }
+/* 交易模式 */
+.trade-panel { display:flex; gap:16px; align-items:center; flex-wrap:wrap; justify-content:center; }
+.trade-btn { width:110px; height:48px; border-radius:10px; cursor:pointer; font-size:18px; font-weight:bold; border:none; transition:.2s; }
+.trade-btn.buy { background:#1a3a2a; color:#3fb950; border:2px solid #238636; }
+.trade-btn.buy:hover:not(:disabled) { background:#238636; color:#fff; }
+.trade-btn.sell { background:#3a1a1a; color:#f85149; border:2px solid #da3633; }
+.trade-btn.sell:hover:not(:disabled) { background:#da3633; color:#fff; }
+.trade-btn.close { background:#1a2a3a; color:#58a6ff; border:2px solid #1f6feb; font-size:16px; }
+.trade-btn.close:hover:not(:disabled) { background:#1f6feb; color:#fff; }
+.trade-btn.end { background:#3a2a1a; color:#d29922; border:2px solid #9e6a03; font-size:14px; width:auto; padding:0 20px; }
+.trade-btn.end:hover:not(:disabled) { background:#9e6a03; color:#fff; }
+.trade-btn:disabled { opacity:.4; cursor:not-allowed; }
+.speed-ctrl { display:flex; align-items:center; gap:8px; font-size:12px; color:#8b949e; }
+.speed-ctrl input[type=range] { width:100px; accent-color:#58a6ff; }
+.speed-ctrl .speed-label { color:#58a6ff; font-weight:bold; min-width:28px; }
+.position-info { background:#161b22; border:1px solid #21262d; border-radius:8px; padding:10px 16px; font-size:14px; text-align:center; min-width:200px; }
+.position-info .label { color:#8b949e; font-size:12px; }
+.position-info .val { font-size:18px; font-weight:bold; }
+.asset-bar { display:flex; gap:24px; justify-content:center; font-size:14px; color:#8b949e; }
+.asset-bar .num { color:#f0f6fc; font-weight:bold; font-size:18px; }
+.session-end { background:#161b22; border:2px solid #d29922; border-radius:12px; padding:20px 30px; text-align:center; display:none; }
+.session-end.show { display:block; }
+.session-end h2 { color:#d29922; margin-bottom:12px; }
+.session-end .grade { font-size:48px; font-weight:bold; margin:8px 0; }
+.session-end .eval { color:#8b949e; line-height:1.8; }
+.session-end .restart { margin-top:16px; padding:12px 36px; border-radius:8px; cursor:pointer; font-size:16px; border:none; background:#238636; color:#fff; }
+.session-end .restart:hover { background:#2ea043; }
+.footer { margin-top:auto; padding:12px; font-size:11px; color:#484f58; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.6; } }
+.price-live { animation:pulse .8s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📊 K线<span>训练大师</span></h1>
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="switchMode('pattern')">形态识别</button>
+    <button class="mode-tab" onclick="switchMode('direction')">方向预测</button>
+    <button class="mode-tab" onclick="switchMode('trading')">💹 交易训练</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="scoreboard" id="scoreboard">
+    <div class="score-item"><div class="val neutral" id="totalQ">0</div><div class="lbl">总题数</div></div>
+    <div class="score-item"><div class="val good" id="correctN">0</div><div class="lbl">正确</div></div>
+    <div class="score-item"><div class="val" id="accPct">-</div><div class="lbl">准确率</div></div>
+    <div class="score-item"><div class="val mid" id="streakN">0</div><div class="lbl">连胜</div></div>
+    <div class="score-item"><div class="val mid" id="bestN">0</div><div class="lbl">最佳</div></div>
+  </div>
+  
+  <!-- 交易模式资产栏 -->
+  <div class="asset-bar" id="assetBar" style="display:none">
+    <span>余额: <span class="num" id="balance">10000</span></span>
+    <span>浮动: <span class="num" id="floatPL" style="color:#d29922">0</span></span>
+    <span>权益: <span class="num" id="equity">10000</span></span>
+    <span>交易: <span class="num" id="tradeCount" style="color:#58a6ff">0/10</span></span>
+  </div>
+  
+  <canvas id="chart" width="700" height="360"></canvas>
+  
+  <div class="pattern-name" id="patName"></div>
+  <div class="pattern-desc" id="patDesc"></div>
+  <div class="result" id="result"></div>
+  <div class="timer" id="timer"></div>
+  <div class="choices" id="choices"></div>
+  <div class="dir-btns" id="dirBtns" style="display:none">
+    <button class="dir-btn up" onclick="predict('up')">📈 看涨</button>
+    <button class="dir-btn down" onclick="predict('down')">📉 看跌</button>
+  </div>
+  
+  <!-- 交易模式操作 -->
+  <div class="trade-panel" id="tradePanel" style="display:none">
+    <button class="trade-btn buy" id="btnBuy" onclick="tradeAction('buy')">买入</button>
+    <div class="position-info" id="posInfo">
+      <div class="label">当前持仓</div>
+      <div class="val">空仓</div>
+    </div>
+    <button class="trade-btn close" id="btnClose" onclick="tradeAction('close')" disabled>平仓</button>
+    <button class="trade-btn sell" id="btnSell" onclick="tradeAction('sell')">卖出</button>
+    <span class="speed-ctrl">🐢<input type="range" id="speedSlider" min="0.5" max="10" step="0.5" value="0.5" oninput="updateSpeed()">🐇<span class="speed-label" id="speedLabel">0.5</span></span>
+    <button class="trade-btn end" id="btnEnd" onclick="endSession()">结束训练</button>
+  </div>
+  
+  <!-- 交易结算 -->
+  <div class="session-end" id="sessionEnd">
+    <h2>📋 训练结算</h2>
+    <div class="grade" id="grade"></div>
+    <div class="eval" id="eval"></div>
+    <div class="eval" id="evalDetail"></div>
+    <button class="restart" onclick="restartTrading()">再来一局</button>
+  </div>
+  
+  <button class="skip-btn" id="skipBtn" onclick="nextRound()" style="display:none">跳过 →</button>
+</div>
+
+<div class="footer">K线训练大师 · 熟能生巧 · 按 1-4/A-D 选择形态 · ↑↓ 预测方向 · 空格/回车下一题</div>
+
+<script>
+// ============ 全局状态 ============
+const canvas = document.getElementById('chart');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const pad = { top:20, right:20, bottom:40, left:60 };
+const pw = W - pad.left - pad.right;
+const ph = H - pad.top - pad.bottom;
+
+let mode = 'pattern';
+let totalQ = 0, correctN = 0, streakN = 0, bestN = 0;
+let currentPattern = null, currentChart = null;
+let answered = false, nextCandleUp = null;
+let autoTimer = null;
+
+// 交易模式状态
+let tradeState = null;
+let tradeAnimId = null;
+
+// 加载存档
+try {
+  const s = JSON.parse(localStorage.getItem('kline_trainer_v2')||'{}');
+  totalQ = s.totalQ||0; correctN = s.correctN||0; bestN = s.bestN||0;
+} catch(e){}
+
+// ============ 形态定义 ============
+const PATTERNS = [
+  { id:'big_bull', name:'大阳线', signal:'bull', desc:'实体长、上下影线极短，买方完全主导，强烈看涨信号。出现于支撑位或下跌末端意味反转。',
+    gen:(o,h,l,c)=>{ let b=14+Math.random()*10; return {o,b,h:b+1+Math.random()*2,l:b-12-Math.random()*8,c:b}; } },
+  { id:'big_bear', name:'大阴线', signal:'bear', desc:'实体长、上下影线极短，卖方完全主导，强烈看跌信号。出现于阻力位或上涨末端意味反转。',
+    gen:(o,h,l,c)=>{ let b=14+Math.random()*10; return {o:b,h:b+1+Math.random()*2,l:b-12-Math.random()*8,c:b}; } },
+  { id:'doji', name:'十字星', signal:'neutral', desc:'开盘价≈收盘价，上下影线相当。市场犹豫不决，趋势可能反转。出现在趋势末端时信号更强。',
+    gen:()=>{ let m=18+Math.random()*4; return {o:m,h:m+4+Math.random()*4,l:m-4-Math.random()*4,c:m+Math.random()*.6-.3}; } },
+  { id:'hammer', name:'锤子线', signal:'bull', desc:'下影线很长（≥实体2倍），实体小且在顶部，上影线极短或无。下跌末端出现意味买方反击，看涨反转。',
+    gen:()=>{ let c=14+Math.random()*3, o=c-2-Math.random()*3; return {o,h:c+.5+Math.random(),l:c-10-Math.random()*6,c}; } },
+  { id:'inv_hammer', name:'倒锤子', signal:'bull', desc:'上影线很长（≥实体2倍），实体小且在底部，下影线极短。下跌末端出现，买方试探，次日收阳确认反转。',
+    gen:()=>{ let o=22+Math.random()*3, c=o-2-Math.random()*3; return {o,h:o+10+Math.random()*6,l:c-.5-Math.random(),c}; } },
+  { id:'shooting_star', name:'射击之星', signal:'bear', desc:'上影线很长（≥实体2倍），实体小且在底部。上涨末端出现，买方力竭，看跌反转。',
+    gen:()=>{ let o=10+Math.random()*3, c=o-2-Math.random()*3; return {o,h:o+10+Math.random()*6,l:c-.5,c}; } },
+  { id:'bull_engulf', name:'看涨吞没', signal:'bull', desc:'阴线后紧跟阳线，阳线实体完全包住阴线实体。下跌中买方强力接管，强烈看涨。',
+    gen:()=>{ let o1=12, c1=o1-4-Math.random()*3, o2=c1-1-Math.random(), c2=o1+4+Math.random()*3; return {isPair:true,c1:{o:o1,h:o1+1,l:c1-1,c:c1},c2:{o:o2,h:c2+1,l:o2-1,c:c2}}; } },
+  { id:'bear_engulf', name:'看跌吞没', signal:'bear', desc:'阳线后紧跟阴线，阴线实体完全包住阳线实体。上涨中卖方强力接管，强烈看跌。',
+    gen:()=>{ let o1=18, c1=o1+4+Math.random()*3, o2=c1+1+Math.random(), c2=o1-4-Math.random()*3; return {isPair:true,c1:{o:o1,h:c1+1,l:o1-1,c:c1},c2:{o:o2,h:o2+1,l:c2-1,c:c2}}; } },
+  { id:'morning_star', name:'启明星', signal:'bull', desc:'三根K线：阴线→小星线→阳线。星线跳空低开。下跌末端绝地反击，强烈看涨。',
+    gen:()=>{ let o1=20,c1=o1-5-Math.random()*3, o2=c1-2-Math.random(),c2=o2+Math.random()*.5; return {isTriple:true,c1:{o:o1,h:o1+1,l:c1-1,c:c1},c2:{o:o2,h:o2+3+Math.random()*2,l:c2-3-Math.random()*2,c:c2},c3:{o:c2+2+Math.random()*2,h:o1+1,l:o2-2,c:o1+4+Math.random()*3}}; } },
+  { id:'evening_star', name:'黄昏星', signal:'bear', desc:'三根K线：阳线→小星线→阴线。星线跳空高开。上涨末端买力衰竭，强烈看跌。',
+    gen:()=>{ let o1=10,c1=o1+5+Math.random()*3, o2=c1+2+Math.random(),c2=o2-Math.random()*.5; return {isTriple:true,c1:{o:o1,h:c1+1,l:o1-1,c:c1},c2:{o:o2,h:o2+3+Math.random()*2,l:c2-3-Math.random()*2,c:c2},c3:{o:c2-2-Math.random()*2,h:o2+2,l:o1-4-Math.random()*3,c:o1-4-Math.random()*3}}; } },
+  { id:'three_white', name:'三白兵', signal:'bull', desc:'三根连续中长阳线，每根开盘在前实体内收盘创新高。多头稳步推进，强烈看涨。',
+    gen:()=>{ let o=14; return {isTriple:true,c1:{o,h:o+6+Math.random()*2,l:o-1,c:o+5+Math.random()*2},c2:{o:o+2,h:o+9+Math.random()*2,l:o+1,c:o+8+Math.random()*2},c3:{o:o+5,h:o+12+Math.random()*2,l:o+4,c:o+11+Math.random()*2}}; } },
+  { id:'three_black', name:'三只乌鸦', signal:'bear', desc:'三根连续中长阴线，每根开盘在前实体内收盘创新低。空头节节推进，强烈看跌。',
+    gen:()=>{ let o=20; return {isTriple:true,c1:{o,h:o+1,l:o-6-Math.random()*2,c:o-5-Math.random()*2},c2:{o:o-2,h:o-1,l:o-9-Math.random()*2,c:o-8-Math.random()*2},c3:{o:o-5,h:o-4,l:o-12-Math.random()*2,c:o-11-Math.random()*2}}; } },
+  { id:'piercing', name:'刺透形态', signal:'bull', desc:'阴线后紧跟阳线，阳线开盘跳空低于前收，但收盘深入阴实体50%以上。强力反击看涨。',
+    gen:()=>{ let o1=20,c1=o1-8-Math.random()*3,mid=(o1+c1)/2,o2=c1-2-Math.random()*2,c2=mid+1+Math.random()*(o1-mid-1); return {isPair:true,c1:{o:o1,h:o1+1,l:c1-1,c:c1},c2:{o:o2,h:c2+1,l:o2-1,c:c2}}; } },
+  { id:'dark_cloud', name:'乌云盖顶', signal:'bear', desc:'阳线后紧跟阴线，阴线开盘跳空高于前收，收盘深入阳实体50%以上。卖压突增看跌。',
+    gen:()=>{ let o1=10,c1=o1+8+Math.random()*3,mid=(o1+c1)/2,o2=c1+2+Math.random()*2,c2=mid-1-Math.random()*(mid-o1); return {isPair:true,c1:{o:o1,h:c1+1,l:o1-1,c:c1},c2:{o:o2,h:o2+1,l:c2-1,c:c2}}; } }
+];
+
+// ============ 绘图工具 ============
+function drawCandle(x, yO, yH, yL, yC, w=16, alpha=1) {
+  const barW = Math.max(w, 6), isUp = yC >= yO;
+  const color = isUp ? '#3fb950' : '#f85149';
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.beginPath(); ctx.moveTo(x, yH); ctx.lineTo(x, yL); ctx.stroke();
+  const bodyH = Math.max(Math.abs(yC - yO), 1);
+  ctx.fillRect(x - barW/2, Math.min(yO, yC), barW, bodyH);
+  if (Math.abs(yC-yO) < 0.8) ctx.strokeRect(x - barW/2, Math.min(yO,yC), barW, bodyH);
+  ctx.globalAlpha = 1;
+}
+
+function renderChart(chartData, highlightIdx = -1) {
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#161b22'; ctx.lineWidth = 1;
+  for (let i=0; i<=4; i++) { let y=pad.top+ph*i/4; ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke(); }
+  let minP=Infinity, maxP=-Infinity;
+  chartData.forEach(d => { minP=Math.min(minP,d.l); maxP=Math.max(maxP,d.h); });
+  if (minP===maxP) maxP+=1;
+  const range = maxP - minP;
+  minP -= range*0.1; maxP += range*0.1;
+  const yr = maxP - minP;
+  function y(p) { return pad.top + (maxP - p) / yr * ph; }
+  ctx.fillStyle = '#484f58'; ctx.font = '11px monospace';
+  for (let i=0; i<=4; i++) {
+    const val = minP + yr * i/4;
+    ctx.fillText(val.toFixed(1), 4, pad.top + ph - ph*i/4 + 4);
+  }
+  const barW = Math.max(3, Math.min(14, (pw / chartData.length) * 0.7));
+  const gap = pw / chartData.length;
+  chartData.forEach((d, i) => {
+    const x = pad.left + gap * i + gap/2;
+    if (highlightIdx >= 0 && i === highlightIdx) { ctx.fillStyle = 'rgba(88,166,255,.12)'; ctx.fillRect(x-gap/2, pad.top, gap, ph); }
+    drawCandle(x, y(d.o), y(d.h), y(d.l), y(d.c), barW);
+  });
+  // 标记持仓入场价
+  if (tradeState && tradeState.position && tradeState.avgEntry) {
+    const ey = y(tradeState.avgEntry);
+    ctx.strokeStyle = tradeState.position==='buy'?'#3fb950':'#f85149';
+    ctx.lineWidth = 1.5; ctx.setLineDash([5,3]);
+    ctx.beginPath(); ctx.moveTo(pad.left, ey); ctx.lineTo(W-pad.right, ey); ctx.stroke();
+    ctx.setLineDash([]); ctx.lineWidth = 1;
+    ctx.fillStyle = tradeState.position==='buy'?'#3fb950':'#f85149';
+    ctx.font = '11px monospace'; ctx.fillText('入场', W-pad.right-30, ey-4);
+  }
+  // 当前价
+  if (tradeState && tradeState.bars.length>0) {
+    const last = tradeState.bars[tradeState.bars.length-1];
+    const cy = y(tradeState.currentPrice);
+    ctx.fillStyle = '#58a6ff'; ctx.beginPath(); ctx.arc(W-pad.right-5, cy, 4, 0, Math.PI*2); ctx.fill();
+    ctx.font = '11px monospace'; ctx.fillText('现价', W-pad.right-38, cy-6);
+  }
+  ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1;
+  ctx.strokeRect(pad.left, pad.top, pw, ph);
+}
+
+// ============ 形态识别 ============
+function newPatternRound() {
+  clearTimeout(autoTimer);
+  const mainIdx = Math.floor(Math.random() * PATTERNS.length);
+  currentPattern = PATTERNS[mainIdx];
+  const bars = [];
+  for (let i=0; i<8; i++) {
+    const base = 18 + (Math.random()-.5)*6;
+    bars.push({ o:base, h:base+2+Math.random()*3, l:base-2-Math.random()*3, c:base+(Math.random()-.5)*4 });
+  }
+  const genData = currentPattern.gen();
+  if (genData.isPair) { bars.push(genData.c1); bars.push(genData.c2); }
+  else if (genData.isTriple) { bars.push(genData.c1); bars.push(genData.c2); bars.push(genData.c3); }
+  else { bars.push(genData); }
+  renderChart(bars, bars.length-1);
+  
+  const options = [currentPattern];
+  const used = new Set([currentPattern.id]);
+  while (options.length < 4) {
+    const ri = Math.floor(Math.random() * PATTERNS.length);
+    if (!used.has(PATTERNS[ri].id) || used.size >= PATTERNS.length) {
+      options.push(PATTERNS[ri]); used.add(PATTERNS[ri].id);
+    }
+  }
+  shuffle(options);
+  
+  document.getElementById('patName').textContent = '';
+  document.getElementById('patDesc').textContent = '';
+  document.getElementById('result').textContent = '';
+  document.getElementById('result').style.color = '';
+  document.getElementById('timer').textContent = '';
+  const choicesDiv = document.getElementById('choices');
+  choicesDiv.innerHTML = '';
+  options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = `${String.fromCharCode(65+i)}. ${opt.name}`;
+    btn.onclick = () => answerPattern(opt, btn, choicesDiv);
+    choicesDiv.appendChild(btn);
+  });
+  choicesDiv.style.display = 'flex';
+  document.getElementById('dirBtns').style.display = 'none';
+  document.getElementById('skipBtn').style.display = 'none';
+  answered = false;
+}
+
+function answerPattern(selected, btn, container) {
+  if (answered) return;
+  answered = true; totalQ++;
+  const allBtns = container.querySelectorAll('.choice-btn');
+  allBtns.forEach(b => b.disabled = true);
+  const isCorrect = selected.id === currentPattern.id;
+  if (isCorrect) {
+    btn.classList.add('correct'); correctN++; streakN++;
+    if (streakN > bestN) bestN = streakN;
+    document.getElementById('result').innerHTML = '✅ 正确！';
+    document.getElementById('result').style.color = '#3fb950';
+  } else {
+    btn.classList.add('wrong'); streakN = 0;
+    allBtns.forEach(b => { if (b.textContent.includes(currentPattern.name)) b.classList.add('correct'); });
+    document.getElementById('result').innerHTML = `❌ 错误！正确：${currentPattern.name}`;
+    document.getElementById('result').style.color = '#f85149';
+  }
+  document.getElementById('patName').textContent = currentPattern.name;
+  document.getElementById('patName').style.color = currentPattern.signal==='bull'?'#3fb950':currentPattern.signal==='bear'?'#f85149':'#d29922';
+  document.getElementById('patDesc').textContent = currentPattern.desc;
+  updateStats(); saveStats();
+  // 2秒自动下一题
+  autoAdvance(2000);
+}
+
+// ============ 方向预测 ============
+function newDirectionRound() {
+  clearTimeout(autoTimer);
+  const bars = [];
+  let price = 100 + Math.random()*20;
+  const trend = (Math.random()>.5?1:-1) * (0.5 + Math.random()*1.5);
+  const vol = 2 + Math.random()*4;
+  for (let i=0; i<20; i++) {
+    const o = price;
+    const change = trend + (Math.random()-.45)*vol*2;
+    const c = o + change;
+    bars.push({ o, h:Math.max(o,c)+Math.random()*vol*.8, l:Math.min(o,c)-Math.random()*vol*.8, c });
+    price = c;
+  }
+  const lastBar = bars[bars.length-1];
+  const trendStrength = bars.slice(-5).reduce((s,b)=>s+(b.c-b.o),0);
+  let nextBar = (Math.random()<.55) ? (trendStrength>0?genUp(lastBar):genDown(lastBar)) : (trendStrength>0?genDown(lastBar):genUp(lastBar));
+  nextCandleUp = nextBar.c >= nextBar.o;
+  currentChart = { bars, nextBar };
+  renderChart(bars, bars.length-1);
+  
+  document.getElementById('patName').textContent = '';
+  document.getElementById('patDesc').textContent = '看左侧K线走势，预测下一根是涨还是跌';
+  document.getElementById('result').textContent = '';
+  document.getElementById('result').style.color = '';
+  document.getElementById('timer').textContent = '';
+  document.getElementById('choices').style.display = 'none';
+  document.getElementById('dirBtns').style.display = 'flex';
+  document.getElementById('skipBtn').style.display = 'inline-block';
+  const btns = document.querySelectorAll('.dir-btn');
+  btns.forEach(b => { b.disabled = false; b.classList.remove('correct','wrong'); });
+  answered = false;
+}
+
+function genUp(prev) { const o=prev.c+(Math.random()-.3)*1.5, c=o+2+Math.random()*6; return {o,h:c+Math.random()*2,l:o-Math.random()*2,c}; }
+function genDown(prev) { const o=prev.c+(Math.random()-.3)*1.5, c=o-2-Math.random()*6; return {o,h:o+Math.random()*2,l:c-Math.random()*2,c}; }
+
+function predict(dir) {
+  if (answered) return;
+  answered = true; totalQ++;
+  const btns = document.querySelectorAll('.dir-btn');
+  btns.forEach(b => b.disabled = true);
+  const isCorrect = (dir==='up' && nextCandleUp) || (dir==='down' && !nextCandleUp);
+  if (isCorrect) {
+    correctN++; streakN++;
+    if (streakN > bestN) bestN = streakN;
+    document.getElementById('result').innerHTML = `${dir==='up'?'📈':'📉'} 预测正确！`;
+    document.getElementById('result').style.color = '#3fb950';
+    document.querySelector(`.dir-btn.${dir}`).classList.add('correct');
+  } else {
+    streakN = 0;
+    document.getElementById('result').innerHTML = `${dir==='up'?'📈':'📉'} 错误！实际${nextCandleUp?'📈阳线':'📉阴线'}`;
+    document.getElementById('result').style.color = '#f85149';
+    document.querySelector(`.dir-btn.${dir}`).classList.add('wrong');
+    document.querySelector(`.dir-btn.${nextCandleUp?'up':'down'}`).classList.add('correct');
+  }
+  document.getElementById('skipBtn').style.display = 'none';
+  const allBars = [...currentChart.bars, currentChart.nextBar];
+  renderChart(allBars, allBars.length-1);
+  updateStats(); saveStats();
+  autoAdvance(2000);
+}
+
+// ============ 自动下一题 ============
+function autoAdvance(ms) {
+  clearTimeout(autoTimer);
+  let remain = Math.ceil(ms/1000);
+  const timerEl = document.getElementById('timer');
+  timerEl.textContent = `${remain}秒后自动下一题`;
+  const tick = setInterval(() => {
+    remain--;
+    if (remain > 0) timerEl.textContent = `${remain}秒后自动下一题`;
+    else clearInterval(tick);
+  }, 1000);
+  autoTimer = setTimeout(() => {
+    timerEl.textContent = '';
+    if (mode === 'trading') return;
+    nextRound();
+  }, ms);
+}
+
+// ============ 交易训练模式 ============
+function initTrading() {
+  cancelAnimationFrame(tradeAnimId);
+  clearTimeout(autoTimer);
+  tradeState = {
+    bars: [],
+    balance: 10000,
+    position: null,    // 'buy' | 'sell' | null
+    positionSize: 0,   // 累计仓位
+    avgEntry: 0,       // 均价
+    currentPrice: 2000,
+    trades: [],        // [{dir,entry,exit,pl}]
+    maxTrades: 10,
+    tickCount: 0,
+    ticksPerBar: 18,
+    barInProgress: null, // 当前正在形成的K线
+    trend: (Math.random()-.5)*0.8,
+    volatility: 3 + Math.random()*5,
+    sessionEnded: false,
+    tickSpeed: 0.5,
+    frameCount: 0
+  };
+  // 生成初始K线
+  let p = 2000;
+  for (let i=0; i<18; i++) {
+    const o = p;
+    const change = tradeState.trend*6 + (Math.random()-.48)*tradeState.volatility*8;
+    const c = o + change;
+    tradeState.bars.push({ o, h:Math.max(o,c)+Math.random()*tradeState.volatility*2, l:Math.min(o,c)-Math.random()*tradeState.volatility*2, c });
+    p = c;
+  }
+  tradeState.currentPrice = p;
+  tradeState.barInProgress = { o: p, h: p, l: p, c: p };
+  updateTradeUI();
+  renderChart([...tradeState.bars, tradeState.barInProgress]);
+  tradeAnimId = requestAnimationFrame(tradeTick);
+}
+
+function tradeTick() {
+  if (tradeState.sessionEnded) return;
+  const ts = tradeState;
+  ts.frameCount++;
+  const frameSkip = Math.max(1, Math.round(15 / ts.tickSpeed));
+  if (ts.frameCount % frameSkip !== 0) { tradeAnimId = requestAnimationFrame(tradeTick); return; }
+  ts.tickCount++;
+  
+  // 更新当前价
+  const noise = (Math.random()-.5) * ts.volatility * 2;
+  const drift = ts.trend * 0.3;
+  ts.currentPrice += drift + noise;
+  
+  // 更新进行中的K线
+  ts.barInProgress.h = Math.max(ts.barInProgress.h, ts.currentPrice);
+  ts.barInProgress.l = Math.min(ts.barInProgress.l, ts.currentPrice);
+  ts.barInProgress.c = ts.currentPrice;
+  
+  // 新K线
+  if (ts.tickCount % ts.ticksPerBar === 0) {
+    ts.bars.push({...ts.barInProgress});
+    ts.barInProgress = { o: ts.currentPrice, h: ts.currentPrice, l: ts.currentPrice, c: ts.currentPrice };
+    // 偶尔切换趋势
+    if (Math.random() < 0.04) ts.trend = (Math.random()-.5)*1.2;
+    // 限制K线数量
+    if (ts.bars.length > 50) ts.bars.shift();
+  }
+  
+  renderChart([...ts.bars, ts.barInProgress]);
+  updateTradeUI();
+  
+  // 趋势微调
+  ts.trend += (Math.random()-.5)*0.02;
+  ts.trend = Math.max(-1.5, Math.min(1.5, ts.trend));
+  
+  tradeAnimId = requestAnimationFrame(tradeTick);
+}
+
+function updateSpeed() {
+  const v = parseFloat(document.getElementById('speedSlider').value);
+  document.getElementById('speedLabel').textContent = v;
+  if (tradeState) tradeState.tickSpeed = v;
+}
+
+function tradeAction(dir) {
+  if (tradeState.sessionEnded) return;
+  const ts = tradeState;
+  
+  if (dir === 'close') {
+    if (!ts.position) return;
+    const pl = ts.position==='buy' ? (ts.currentPrice-ts.avgEntry)*ts.positionSize : (ts.avgEntry-ts.currentPrice)*ts.positionSize;
+    ts.balance += pl;
+    ts.trades.push({ dir:ts.position, entry:ts.avgEntry, exit:ts.currentPrice, pl, size:ts.positionSize });
+    ts.position = null; ts.positionSize = 0; ts.avgEntry = 0;
+    if (ts.trades.length >= ts.maxTrades) { endSession(); return; }
+  } else if (dir === ts.position) {
+    // 同方向加仓
+    const oldCost = ts.avgEntry * ts.positionSize;
+    ts.positionSize++;
+    ts.avgEntry = (oldCost + ts.currentPrice) / ts.positionSize;
+  } else {
+    // 方向不同：先平仓再开反向新仓
+    if (ts.position) {
+      const pl = ts.position==='buy' ? (ts.currentPrice-ts.avgEntry)*ts.positionSize : (ts.avgEntry-ts.currentPrice)*ts.positionSize;
+      ts.balance += pl;
+      ts.trades.push({ dir:ts.position, entry:ts.avgEntry, exit:ts.currentPrice, pl, size:ts.positionSize });
+      if (ts.trades.length >= ts.maxTrades) { endSession(); return; }
+    }
+    ts.position = dir; ts.positionSize = 1; ts.avgEntry = ts.currentPrice;
+  }
+  updateTradeUI();
+}
+
+function endSession() {
+  if (tradeState.sessionEnded) return;
+  tradeState.sessionEnded = true;
+  cancelAnimationFrame(tradeAnimId);
+  
+  // 强制平仓
+  if (tradeState.position) {
+    const pl = tradeState.position==='buy' ? (tradeState.currentPrice-tradeState.avgEntry)*tradeState.positionSize : (tradeState.avgEntry-tradeState.currentPrice)*tradeState.positionSize;
+    tradeState.balance += pl;
+    tradeState.trades.push({ dir:tradeState.position, entry:tradeState.avgEntry, exit:tradeState.currentPrice, pl, size:tradeState.positionSize });
+    tradeState.position = null; tradeState.positionSize = 0; tradeState.avgEntry = 0;
+  }
+  
+  updateTradeUI();
+  
+  // 评分
+  const ts = tradeState;
+  const totalTrades = ts.trades.length;
+  if (totalTrades === 0) {
+    showEval('无交易', 'F', '一单都没做，白练了 😅');
+    return;
+  }
+  
+  const wins = ts.trades.filter(t=>t.pl>0).length;
+  const winRate = wins/totalTrades;
+  const totalPL = ts.balance - 10000;
+  const maxWin = Math.max(...ts.trades.map(t=>t.pl));
+  const maxLoss = Math.min(...ts.trades.map(t=>t.pl));
+  const avgPL = totalPL/totalTrades;
+  
+  // 评级
+  let grade, gradeColor, evaluation;
+  if (winRate >= 0.7 && totalPL > 0) { grade='A'; gradeColor='#3fb950'; evaluation='优秀交易员！胜率高且盈利稳定。'; }
+  else if (winRate >= 0.55 && totalPL > 0) { grade='B'; gradeColor='#58a6ff'; evaluation='不错，盈利但胜率还有提升空间。'; }
+  else if (winRate >= 0.4 || (totalPL < 0 && totalPL > -50)) { grade='C'; gradeColor='#d29922'; evaluation='一般，需要加强入场时机的判断。'; }
+  else if (totalPL > -150) { grade='D'; gradeColor='#f0883e'; evaluation='较差，追涨杀跌是亏损主因。'; }
+  else { grade='F'; gradeColor='#f85149'; evaluation='需要重新学习基础知识，暂时远离实盘。'; }
+  
+  showEval(evaluation, grade, gradeColor, ts);
+}
+
+function showEval(evaluation, grade, gradeColor, ts) {
+  const detail = ts ? `
+    总交易: ${ts.trades.length}笔&nbsp;&nbsp;|&nbsp;&nbsp;
+    胜率: ${ts.trades.length>0?(ts.trades.filter(t=>t.pl>0).length/ts.trades.length*100).toFixed(0):0}%&nbsp;&nbsp;|&nbsp;&nbsp;
+    总盈亏: ${(ts.balance-10000).toFixed(1)}&nbsp;&nbsp;|&nbsp;&nbsp;
+    最终余额: ${ts.balance.toFixed(1)}
+  ` : '';
+  document.getElementById('grade').textContent = grade;
+  document.getElementById('grade').style.color = gradeColor;
+  document.getElementById('eval').textContent = evaluation;
+  document.getElementById('evalDetail').innerHTML = detail;
+  document.getElementById('sessionEnd').classList.add('show');
+  document.getElementById('tradePanel').style.display = 'none';
+  document.getElementById('btnEnd').style.display = 'none';
+}
+
+function restartTrading() {
+  document.getElementById('sessionEnd').classList.remove('show');
+  document.getElementById('tradePanel').style.display = 'flex';
+  document.getElementById('btnEnd').style.display = 'inline-block';
+  initTrading();
+}
+
+function updateTradeUI() {
+  const ts = tradeState;
+  if (!ts) return;
+  const pl = ts.position ? (ts.position==='buy'?(ts.currentPrice-ts.avgEntry)*ts.positionSize:(ts.avgEntry-ts.currentPrice)*ts.positionSize) : 0;
+  document.getElementById('balance').textContent = ts.balance.toFixed(1);
+  document.getElementById('floatPL').textContent = pl.toFixed(1);
+  document.getElementById('floatPL').style.color = pl>=0?'#3fb950':'#f85149';
+  document.getElementById('equity').textContent = (ts.balance+pl).toFixed(1);
+  document.getElementById('tradeCount').textContent = `${ts.trades.length}/${ts.maxTrades}`;
+  
+  const posInfo = document.getElementById('posInfo');
+  if (ts.position) {
+    const sz = ts.positionSize > 1 ? ` ×${ts.positionSize}` : '';
+    posInfo.innerHTML = `<div class="label">持仓: ${ts.position==='buy'?'做多':'做空'}${sz} @${ts.avgEntry.toFixed(1)}</div>
+                         <div class="val" style="color:${pl>=0?'#3fb950':'#f85149'}">${pl>=0?'+':''}${pl.toFixed(1)}</div>`;
+    document.getElementById('btnClose').disabled = false;
+  } else {
+    posInfo.innerHTML = '<div class="label">当前持仓</div><div class="val">空仓</div>';
+    document.getElementById('btnClose').disabled = true;
+  }
+}
+
+// ============ 通用 ============
+function nextRound() {
+  clearTimeout(autoTimer);
+  if (mode === 'pattern') newPatternRound();
+  else if (mode === 'direction') newDirectionRound();
+}
+
+function switchMode(m) {
+  mode = m;
+  clearTimeout(autoTimer);
+  cancelAnimationFrame(tradeAnimId);
+  tradeState = null;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.mode-tab').forEach(t => {
+    if ((m==='pattern'&&t.textContent.includes('形态'))||(m==='direction'&&t.textContent.includes('方向'))||(m==='trading'&&t.textContent.includes('交易'))) t.classList.add('active');
+  });
+  
+  // UI切换
+  const isTrade = m === 'trading';
+  document.getElementById('scoreboard').style.display = isTrade?'none':'flex';
+  document.getElementById('assetBar').style.display = isTrade?'flex':'none';
+  document.getElementById('choices').style.display = isTrade?'none':'flex';
+  document.getElementById('dirBtns').style.display = 'none';
+  document.getElementById('tradePanel').style.display = isTrade?'flex':'none';
+  document.getElementById('sessionEnd').classList.remove('show');
+  document.getElementById('skipBtn').style.display = 'none';
+  document.getElementById('timer').textContent = '';
+  document.getElementById('result').textContent = '';
+  document.getElementById('patName').textContent = '';
+  document.getElementById('patDesc').textContent = '';
+  
+  if (isTrade) initTrading();
+  else nextRound();
+}
+
+function updateStats() {
+  document.getElementById('totalQ').textContent = totalQ;
+  document.getElementById('correctN').textContent = correctN;
+  const acc = totalQ>0 ? (correctN/totalQ*100).toFixed(1) : '-';
+  document.getElementById('accPct').textContent = acc==='-'?'-':acc+'%';
+  const accEl = document.getElementById('accPct');
+  accEl.className = 'val ' + (totalQ===0?'neutral':correctN/totalQ>=.7?'good':correctN/totalQ>=.5?'mid':'bad');
+  document.getElementById('streakN').textContent = streakN;
+  document.getElementById('bestN').textContent = bestN;
+}
+
+function saveStats() {
+  try { localStorage.setItem('kline_trainer_v2', JSON.stringify({ totalQ, correctN, bestN })); } catch(e){}
+}
+
+function shuffle(arr) { for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } }
+
+// 键盘快捷键
+document.addEventListener('keydown', e => {
+  if (mode === 'trading') {
+    if (e.key==='b'||e.key==='B') tradeAction('buy');
+    if (e.key==='s'||e.key==='S') tradeAction('sell');
+    if (e.key==='c'||e.key==='C') tradeAction('close');
+    if (e.key==='e'||e.key==='E') endSession();
+    return;
+  }
+  if (answered) {
+    if (e.key==='Enter'||e.key===' ') { e.preventDefault(); clearTimeout(autoTimer); document.getElementById('timer').textContent=''; nextRound(); }
+    return;
+  }
+  if (mode === 'pattern') {
+    const map = { '1':0,'2':1,'3':2,'4':3,'a':0,'b':1,'c':2,'d':3 };
+    if (map[e.key] !== undefined) {
+      const btns = document.querySelectorAll('.choice-btn');
+      if (btns[map[e.key]]) btns[map[e.key]].click();
+    }
+  } else if (mode === 'direction') {
+    if (e.key==='ArrowUp'||e.key==='w') predict('up');
+    if (e.key==='ArrowDown'||e.key==='s') predict('down');
+  }
+});
+
+// 启动
+updateStats();
+newPatternRound();
+</script>
+</body>
+</html>
