@@ -384,6 +384,14 @@ a { color:inherit; text-decoration:none; }
           <input type="text" id="adminProductName" placeholder="商品名称">
         </div>
         <div class="form-group">
+          <label>商品图片</label>
+          <input type="file" id="adminProductImage" accept="image/*" onchange="previewAdminImage(this)">
+          <div id="adminImagePreview" style="margin-top:8px;display:none;">
+            <img id="adminPreviewImg" style="max-width:120px;max-height:120px;border-radius:8px;">
+            <button class="btn btn-small btn-danger" style="margin-left:8px;" onclick="clearAdminImage()">清除</button>
+          </div>
+        </div>
+        <div class="form-group">
           <label>价格 (USDT)</label>
           <input type="number" id="adminProductPrice" placeholder="0.00" step="0.01">
         </div>
@@ -712,7 +720,9 @@ function renderProducts(list) {
   const el = document.getElementById('productList');
   el.innerHTML = list.map(p => `
     <div class="product-card" onclick="showProduct(${p.id})">
-      <div style="width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:48px;background:#21262d;">${p.img}</div>
+      <div style="width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#21262d;overflow:hidden;">
+        ${p.img.startsWith('data:') ? `<img src="${p.img}" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:48px;">${p.img}</span>`}
+      </div>
       <div class="info">
         <div class="shop">${p.shop}</div>
         <div class="name">${p.name}</div>
@@ -727,8 +737,8 @@ function showProduct(id) {
   if (!p) return;
   document.getElementById('productTitle').textContent = p.name;
   document.getElementById('productDetail').innerHTML = `
-    <div style="text-align:center;padding:20px;background:#21262d;border-radius:12px;margin-bottom:16px;">
-      <span style="font-size:80px;">${p.img}</span>
+    <div style="text-align:center;padding:20px;background:#21262d;border-radius:12px;margin-bottom:16px;overflow:hidden;">
+      ${p.img.startsWith('data:') ? `<img src="${p.img}" style="width:100%;max-height:200px;object-fit:contain;">` : `<span style="font-size:80px;">${p.img}</span>`}
     </div>
     <div style="font-size:11px;color:#8b949e;">${p.shop}</div>
     <div style="font-size:16px;font-weight:bold;margin:8px 0;">${p.name}</div>
@@ -1090,14 +1100,37 @@ function renderAdminProducts() {
   const el = document.getElementById('adminProductsList');
   el.innerHTML = products.map(p => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#21262d;border-radius:8px;margin-bottom:8px;">
-      <div>
-        <div style="font-size:20px;">${p.img}</div>
-        <div style="font-size:13px;font-weight:bold;">${p.name}</div>
-        <div style="font-size:11px;color:#8b949e;">${p.shop} · ${p.price.toFixed(2)} USDT</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        ${p.img.startsWith('data:') ? `<img src="${p.img}" style="width:50px;height:50px;border-radius:8px;object-fit:cover;">` : `<div style="font-size:20px;">${p.img}</div>`}
+        <div>
+          <div style="font-size:13px;font-weight:bold;">${p.name}</div>
+          <div style="font-size:11px;color:#8b949e;">${p.shop} · ${p.price.toFixed(2)} USDT</div>
+        </div>
       </div>
       <button class="btn btn-small btn-danger" onclick="deleteProduct(${p.id})">删除</button>
     </div>
   `).join('') || '<div style="color:#8b949e;text-align:center;padding:20px;">暂无商品</div>';
+}
+
+let adminProductImageData = null;
+
+function previewAdminImage(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      adminProductImageData = e.target.result;
+      document.getElementById('adminPreviewImg').src = adminProductImageData;
+      document.getElementById('adminImagePreview').style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function clearAdminImage() {
+  adminProductImageData = null;
+  document.getElementById('adminProductImage').value = '';
+  document.getElementById('adminImagePreview').style.display = 'none';
+}
 }
 
 function adminAddProduct() {
@@ -1110,6 +1143,7 @@ function adminAddProduct() {
   if (!name || !price) { alert('请填写商品名称和价格'); return; }
   
   const emojis = ['📦','🎁','💎','📱','💻','🎮','🎧','⌚','👕','👟','👜','🍜','🍕','🤖'];
+  const img = adminProductImageData || emojis[Math.floor(Math.random() * emojis.length)];
   
   let shopName = '平台自营';
   let finalShopId = 0;
@@ -1126,8 +1160,7 @@ function adminAddProduct() {
     id: Date.now(),
     shopId: finalShopId,
     shop: shopName,
-    name, price, stock, category,
-    img: emojis[Math.floor(Math.random() * emojis.length)]
+    name, price, stock, category, img
   });
   
   localStorage.setItem('cryptoProducts', JSON.stringify(products));
@@ -1136,6 +1169,7 @@ function adminAddProduct() {
   document.getElementById('adminProductName').value = '';
   document.getElementById('adminProductPrice').value = '';
   document.getElementById('adminProductStock').value = '';
+  clearAdminImage();
   renderAdminProducts();
   renderProducts(products);
 }
