@@ -83,9 +83,9 @@ canvas { border-radius:8px; background:#0d1117; border:1px solid #21262d; }
 <div class="header">
   <h1>📊 K线<span>训练大师</span></h1>
   <div class="mode-tabs">
-    <button class="mode-tab active" onclick="switchMode('pattern')">形态识别</button>
+    <button class="mode-tab active" onclick="switchMode('trading')">💹 交易训练</button>
     <button class="mode-tab" onclick="switchMode('direction')">方向预测</button>
-    <button class="mode-tab" onclick="switchMode('trading')">💹 交易训练</button>
+    <button class="mode-tab" onclick="switchMode('pattern')">形态识别</button>
   </div>
 </div>
 
@@ -690,7 +690,7 @@ document.addEventListener('keydown', e => {
 
 // 启动
 updateStats();
-newPatternRound();
+switchMode('trading');
 </script>
 </body>
 </html>
